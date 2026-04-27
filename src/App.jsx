@@ -1,5 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxDBpV-2zJl1zcjQ7isCWBnS2VfXc5RufhK6jI-TAjrOEHaPE_ID1KGRBtJhERm8MtR/exec";
+
+const sendToSheets = async (payload) => {
+  try {
+    await fetch(SHEETS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.error("Sheets error", e);
+  }
+};
+
 const DISC_PAIRS = [
   { a: { text: "Я предпочитаю быстро принимать решения, даже с риском ошибиться", d: "D" }, b: { text: "Я предпочитаю тщательно анализировать перед тем, как действовать", d: "C" } },
   { a: { text: "Мне важно, чтобы команда была дружной и стабильной", d: "S" }, b: { text: "Мне важно достигать результата, даже если это создаёт напряжение", d: "D" } },
@@ -54,21 +69,6 @@ const IQ_QUESTIONS = [
   { type: "speed", q: "В магазине было 50 товаров. Продали 40%. Сколько осталось?", options: ["20", "30", "10", "40"], ans: 1 },
 ];
 
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxDBpV-2zJl1zcjQ7isCWBnS2VfXc5RufhK6jI-TAjrOEHaPE_ID1KGRBtJhERm8MtR/exec";
-
-const sendToSheets = async (payload) => {
-  try {
-    await fetch(SHEETS_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch (e) {
-    console.error("Sheets error", e);
-  }
-};
-
 const DISC_PROFILES = {
   D: { name: "Доминирование (D)", color: "#c0392b", desc: "Ориентирован на результат, решителен, любит контроль. Силён в условиях давления и конкуренции. Может быть жёстким." },
   I: { name: "Влияние (I)", color: "#e67e22", desc: "Коммуникабелен, энергичен, умеет вовлекать. Отличный командный игрок и переговорщик. Может избегать деталей." },
@@ -88,7 +88,7 @@ const SPEED_Q_IDS = IQ_QUESTIONS.map((q, i) => q.type === "speed" ? i : -1).filt
 const SPEED_TIME = 8;
 
 export default function App() {
-  const [screen, setScreen] = useState("intro"); // intro | iq | disc | result
+  const [screen, setScreen] = useState("intro");
   const [iqAnswers, setIqAnswers] = useState({});
   const [discAnswers, setDiscAnswers] = useState({});
   const [currentQ, setCurrentQ] = useState(0);
@@ -96,9 +96,50 @@ export default function App() {
   const [timedOut, setTimedOut] = useState({});
   const timerRef = useRef(null);
   const [candidateName, setCandidateName] = useState("");
+  const sentRef = useRef(false);
 
   const totalIQ = IQ_QUESTIONS.length;
   const totalDISC = DISC_PAIRS.length;
+
+  const calcIQScore = () => {
+    let scores = { numeric: 0, verbal: 0, situational: 0, nonstandard: 0, speed: 0 };
+    IQ_QUESTIONS.forEach((q, i) => { if (iqAnswers[i] === q.ans) scores[q.type]++; });
+    const raw = Object.values(scores).reduce((a, b) => a + b, 0);
+    const pct = Math.round((raw / totalIQ) * 100);
+    return { scores, raw, pct };
+  };
+
+  const calcDISC = () => {
+    let counts = { D: 0, I: 0, S: 0, C: 0 };
+    Object.values(discAnswers).forEach(d => counts[d]++);
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return { counts, primary: sorted[0][0], secondary: sorted[1][0] };
+  };
+
+  const getRank = (pct) => {
+    if (pct >= 85) return { label: "Высокий потенциал", color: "#27ae60" };
+    if (pct >= 65) return { label: "Выше среднего", color: "#2980b9" };
+    if (pct >= 45) return { label: "Средний уровень", color: "#e67e22" };
+    return { label: "Ниже ожиданий", color: "#c0392b" };
+  };
+
+  useEffect(() => {
+    if (screen === "result" && !sentRef.current) {
+      sentRef.current = true;
+      const { scores, pct } = calcIQScore();
+      const { primary, secondary } = calcDISC();
+      const rankInfo = getRank(pct);
+      sendToSheets({
+        date: new Date().toLocaleString("ru-RU"),
+        name: candidateName,
+        score: pct,
+        rank: rankInfo.label,
+        primary: DISC_PROFILES[primary].name,
+        secondary: DISC_PROFILES[secondary].name,
+        details: IQ_SECTIONS.map(s => `${s.label}: ${scores[s.key]}/${s.max}`).join(", ")
+      });
+    }
+  }, [screen]);
 
   useEffect(() => {
     if (screen === "iq") {
@@ -148,41 +189,17 @@ export default function App() {
     setTimeout(() => goNext("disc"), 500);
   };
 
-  const calcIQScore = () => {
-    let scores = { numeric: 0, verbal: 0, situational: 0, nonstandard: 0, speed: 0 };
-    IQ_QUESTIONS.forEach((q, i) => {
-      if (iqAnswers[i] === q.ans) scores[q.type]++;
-    });
-    const raw = Object.values(scores).reduce((a, b) => a + b, 0);
-    const pct = Math.round((raw / totalIQ) * 100);
-    return { scores, raw, pct };
-  };
-
-  const calcDISC = () => {
-    let counts = { D: 0, I: 0, S: 0, C: 0 };
-    Object.values(discAnswers).forEach(d => counts[d]++);
-    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    return { counts, primary: sorted[0][0], secondary: sorted[1][0] };
-  };
-
-  const getRank = (pct) => {
-    if (pct >= 85) return { label: "Высокий потенциал", color: "#27ae60" };
-    if (pct >= 65) return { label: "Выше среднего", color: "#2980b9" };
-    if (pct >= 45) return { label: "Средний уровень", color: "#e67e22" };
-    return { label: "Ниже ожиданий", color: "#c0392b" };
-  };
-
   const s = {
-    wrap: { padding: "1.5rem 1rem", maxWidth: 640, margin: "0 auto", fontFamily: "var(--font-sans)" },
-    h1: { fontSize: 22, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 0.5rem" },
-    h2: { fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 1rem" },
-    muted: { fontSize: 14, color: "var(--color-text-secondary)", lineHeight: 1.6 },
-    btn: { display: "block", width: "100%", padding: "12px 16px", marginBottom: 10, background: "var(--color-background-secondary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-md)", fontSize: 15, color: "var(--color-text-primary)", cursor: "pointer", textAlign: "left", transition: "border-color 0.15s" },
-    btnPrimary: { padding: "12px 24px", background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-primary)", borderRadius: "var(--border-radius-md)", fontSize: 15, fontWeight: 500, color: "var(--color-text-primary)", cursor: "pointer", marginTop: "1rem" },
-    progress: { height: 4, background: "var(--color-border-tertiary)", borderRadius: 2, margin: "1rem 0" },
-    progressFill: (pct, col) => ({ height: "100%", width: `${pct}%`, background: col || "var(--color-text-primary)", borderRadius: 2, transition: "width 0.3s" }),
-    card: { background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "1rem 1.25rem", marginBottom: 12 },
-    tag: (col) => ({ display: "inline-block", fontSize: 12, padding: "3px 10px", borderRadius: "var(--border-radius-md)", background: col + "22", color: col, fontWeight: 500, marginBottom: 8 }),
+    wrap: { padding: "1.5rem 1rem", maxWidth: 640, margin: "0 auto", fontFamily: "var(--font-sans, sans-serif)" },
+    h1: { fontSize: 22, fontWeight: 500, color: "#111", margin: "0 0 0.5rem" },
+    h2: { fontSize: 18, fontWeight: 500, color: "#111", margin: "0 0 1rem" },
+    muted: { fontSize: 14, color: "#666", lineHeight: 1.6 },
+    btn: { display: "block", width: "100%", padding: "12px 16px", marginBottom: 10, background: "#f5f5f5", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 15, color: "#111", cursor: "pointer", textAlign: "left" },
+    btnPrimary: { padding: "12px 24px", background: "#fff", border: "0.5px solid #999", borderRadius: 8, fontSize: 15, fontWeight: 500, color: "#111", cursor: "pointer", marginTop: "1rem" },
+    progress: { height: 4, background: "#eee", borderRadius: 2, margin: "1rem 0" },
+    progressFill: (pct, col) => ({ height: "100%", width: `${pct}%`, background: col || "#333", borderRadius: 2, transition: "width 0.3s" }),
+    card: { background: "#fff", border: "0.5px solid #ddd", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: 12 },
+    tag: (col) => ({ display: "inline-block", fontSize: 12, padding: "3px 10px", borderRadius: 8, background: col + "22", color: col, fontWeight: 500, marginBottom: 8 }),
   };
 
   if (screen === "intro") return (
@@ -191,9 +208,9 @@ export default function App() {
       <p style={s.muted}>Тест состоит из двух блоков:<br/>• Блок 1 — Сообразительность (28 вопросов)<br/>• Блок 2 — Психотип DISC (20 пар утверждений)<br/><br/>Ориентировочное время: 30–40 минут. Некоторые вопросы имеют ограничение по времени.</p>
       <div style={{ marginTop: "1.5rem" }}>
         <label style={{ ...s.muted, display: "block", marginBottom: 6 }}>Имя кандидата</label>
-        <input value={candidateName} onChange={e => setCandidateName(e.target.value)} placeholder="Введите имя..." style={{ width: "100%", padding: "10px 12px", fontSize: 15, borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)", background: "var(--color-background-secondary)", color: "var(--color-text-primary)", boxSizing: "border-box" }} />
+        <input value={candidateName} onChange={e => setCandidateName(e.target.value)} placeholder="Введите имя..." style={{ width: "100%", padding: "10px 12px", fontSize: 15, borderRadius: 8, border: "0.5px solid #ddd", background: "#f5f5f5", color: "#111", boxSizing: "border-box" }} />
       </div>
-      <button style={s.btnPrimary} onClick={() => { if (candidateName.trim()) setScreen("iq"); }}>Начать тест →</button>
+      <button style={s.btnPrimary} onClick={() => { if (candidateName.trim()) { sentRef.current = false; setScreen("iq"); } }}>Начать тест →</button>
     </div>
   );
 
@@ -206,31 +223,25 @@ export default function App() {
     const progPct = Math.round(((currentQ + 1) / totalIQ) * 100);
     return (
       <div style={s.wrap}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
           <span style={s.muted}>Блок 1 · {sectionLabel}</span>
           <span style={s.muted}>{currentQ + 1} / {totalIQ}</span>
         </div>
         <div style={s.progress}><div style={s.progressFill(progPct)} /></div>
         {isSpeed && timeLeft !== null && (
-          <div style={{ ...s.muted, marginBottom: 8, color: timeLeft <= 3 ? "#c0392b" : "var(--color-text-secondary)" }}>
-            ⏱ {timeLeft} сек
-          </div>
+          <div style={{ ...s.muted, marginBottom: 8, color: timeLeft <= 3 ? "#c0392b" : "#666" }}>⏱ {timeLeft} сек</div>
         )}
         <div style={{ ...s.card, marginBottom: "1.5rem" }}>
-          <p style={{ fontSize: 16, lineHeight: 1.6, margin: 0, color: "var(--color-text-primary)" }}>{q.q}</p>
+          <p style={{ fontSize: 16, lineHeight: 1.6, margin: 0, color: "#111" }}>{q.q}</p>
         </div>
         {q.options.map((opt, i) => {
-          let border = "0.5px solid var(--color-border-tertiary)";
-          let bg = "var(--color-background-secondary)";
+          let border = "0.5px solid #ddd";
+          let bg = "#f5f5f5";
           if (answered || to) {
             if (i === q.ans) { border = "1.5px solid #27ae60"; bg = "#27ae6011"; }
             else if (iqAnswers[currentQ] === i && i !== q.ans) { border = "1.5px solid #c0392b"; bg = "#c0392b11"; }
           }
-          return (
-            <button key={i} style={{ ...s.btn, border, background: bg }} onClick={() => answerIQ(i)}>
-              {opt}
-            </button>
-          );
+          return <button key={i} style={{ ...s.btn, border, background: bg }} onClick={() => answerIQ(i)}>{opt}</button>;
         })}
         {(answered || to) && (
           <button style={s.btnPrimary} onClick={() => goNext("iq")}>
@@ -247,7 +258,7 @@ export default function App() {
     const progPct = Math.round(((currentQ + 1) / totalDISC) * 100);
     return (
       <div style={s.wrap}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
           <span style={s.muted}>Блок 2 · Психотип</span>
           <span style={s.muted}>{currentQ + 1} / {totalDISC}</span>
         </div>
@@ -257,10 +268,8 @@ export default function App() {
           const item = pair[k];
           const chosen = discAnswers[currentQ] === item.d;
           return (
-            <button key={k} style={{ ...s.btn, border: chosen ? "1.5px solid #2980b9" : "0.5px solid var(--color-border-tertiary)", background: chosen ? "#2980b911" : "var(--color-background-secondary)" }}
-              onClick={() => answerDISC(item.d)}>
-              {item.text}
-            </button>
+            <button key={k} style={{ ...s.btn, border: chosen ? "1.5px solid #2980b9" : "0.5px solid #ddd", background: chosen ? "#2980b911" : "#f5f5f5" }}
+              onClick={() => answerDISC(item.d)}>{item.text}</button>
           );
         })}
         {answered && (
@@ -276,24 +285,12 @@ export default function App() {
     const { scores, raw, pct } = calcIQScore();
     const { counts, primary, secondary } = calcDISC();
     const rankInfo = getRank(pct);
-    useEffect(() => {
-      sendToSheets({
-        date: new Date().toLocaleString("ru-RU"),
-        name: candidateName,
-        score: pct,
-        rank: rankInfo.label,
-        primary: DISC_PROFILES[primary].name,
-        secondary: DISC_PROFILES[secondary].name,
-        details: IQ_SECTIONS.map(s => `${s.label}: ${scores[s.key]}/${s.max}`).join(", ")
-      });
-    }, []);
     const pDisc = DISC_PROFILES[primary];
     const sDisc = DISC_PROFILES[secondary];
     const maxDisc = Math.max(...Object.values(counts));
     return (
       <div style={s.wrap}>
         <h1 style={s.h1}>Результаты · {candidateName}</h1>
-
         <h2 style={{ ...s.h2, marginTop: "1.5rem" }}>Блок 1 — Сообразительность</h2>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
           <span style={{ fontSize: 36, fontWeight: 500, color: rankInfo.color }}>{pct}%</span>
@@ -307,44 +304,38 @@ export default function App() {
             return (
               <div key={sec.key} style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>{sec.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>{sc}/{sec.max}</span>
+                  <span style={{ fontSize: 13, color: "#666" }}>{sec.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#111" }}>{sc}/{sec.max}</span>
                 </div>
-                <div style={s.progress}>
-                  <div style={s.progressFill(p, p >= 80 ? "#27ae60" : p >= 50 ? "#e67e22" : "#c0392b")} />
-                </div>
+                <div style={s.progress}><div style={s.progressFill(p, p >= 80 ? "#27ae60" : p >= 50 ? "#e67e22" : "#c0392b")} /></div>
               </div>
             );
           })}
         </div>
-
         <h2 style={{ ...s.h2, marginTop: "2rem" }}>Блок 2 — Психотип DISC</h2>
-        <div style={{ ...s.card, borderLeft: `3px solid ${pDisc.color}`, borderRadius: "var(--border-radius-lg)" }}>
+        <div style={{ ...s.card, borderLeft: `3px solid ${pDisc.color}`, borderRadius: 12 }}>
           <div style={s.tag(pDisc.color)}>Основной профиль</div>
-          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px", color: "var(--color-text-primary)" }}>{pDisc.name}</p>
+          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px", color: "#111" }}>{pDisc.name}</p>
           <p style={{ ...s.muted, margin: 0 }}>{pDisc.desc}</p>
         </div>
-        <div style={{ ...s.card, borderLeft: `3px solid ${sDisc.color}`, borderRadius: "var(--border-radius-lg)" }}>
+        <div style={{ ...s.card, borderLeft: `3px solid ${sDisc.color}`, borderRadius: 12 }}>
           <div style={s.tag(sDisc.color)}>Вторичный профиль</div>
-          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px", color: "var(--color-text-primary)" }}>{sDisc.name}</p>
+          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px", color: "#111" }}>{sDisc.name}</p>
           <p style={{ ...s.muted, margin: 0 }}>{sDisc.desc}</p>
         </div>
         <div style={{ marginTop: "1rem" }}>
           {Object.entries(DISC_PROFILES).map(([k, v]) => (
             <div key={k} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>{v.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>{counts[k]}</span>
+                <span style={{ fontSize: 13, color: "#666" }}>{v.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "#111" }}>{counts[k]}</span>
               </div>
-              <div style={s.progress}>
-                <div style={{ ...s.progressFill(Math.round((counts[k] / maxDisc) * 100), v.color) }} />
-              </div>
+              <div style={s.progress}><div style={{ ...s.progressFill(Math.round((counts[k] / maxDisc) * 100), v.color) }} /></div>
             </div>
           ))}
         </div>
-
-        <div style={{ ...s.card, marginTop: "1.5rem", background: "var(--color-background-secondary)" }}>
-          <p style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 6px" }}>Рекомендация</p>
+        <div style={{ ...s.card, marginTop: "1.5rem", background: "#f5f5f5" }}>
+          <p style={{ fontSize: 13, fontWeight: 500, color: "#111", margin: "0 0 6px" }}>Рекомендация</p>
           <p style={{ ...s.muted, margin: 0 }}>
             {pct >= 65 && (primary === "D" || primary === "C")
               ? "Аналитический склад ума + решительность. Подходит для управленческих и проектных ролей."
@@ -355,8 +346,7 @@ export default function App() {
               : "Стабильный и надёжный профиль. Подходит для исполнительских ролей в структурированной среде."}
           </p>
         </div>
-
-        <button style={{ ...s.btnPrimary, marginTop: "1.5rem" }} onClick={() => { setScreen("intro"); setIqAnswers({}); setDiscAnswers({}); setCurrentQ(0); setTimedOut({}); setCandidateName(""); }}>
+        <button style={{ ...s.btnPrimary, marginTop: "1.5rem" }} onClick={() => { setScreen("intro"); setIqAnswers({}); setDiscAnswers({}); setCurrentQ(0); setTimedOut({}); setCandidateName(""); sentRef.current = false; }}>
           ← Пройти снова
         </button>
       </div>
