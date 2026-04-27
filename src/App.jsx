@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxDBpV-2zJl1zcjQ7isCWBnS2VfXc5RufhK6jI-TAjrOEHaPE_ID1KGRBtJhERm8MtR/exec";
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwxZKU5KNXZDWpESG1NinBrWhInlAQ1Cqp0g71WZbuRF3XcPhmb_JEtf6cXykVb5d-m/exec";
 
 const sendToSheets = async (payload) => {
   try {
