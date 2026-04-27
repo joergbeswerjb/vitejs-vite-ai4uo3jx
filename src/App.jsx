@@ -54,6 +54,21 @@ const IQ_QUESTIONS = [
   { type: "speed", q: "В магазине было 50 товаров. Продали 40%. Сколько осталось?", options: ["20", "30", "10", "40"], ans: 1 },
 ];
 
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxDBpV-2zJl1zcjQ7isCWBnS2VfXc5RufhK6jI-TAjrOEHaPE_ID1KGRBtJhERm8MtR/exec";
+
+const sendToSheets = async (payload) => {
+  try {
+    await fetch(SHEETS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.error("Sheets error", e);
+  }
+};
+
 const DISC_PROFILES = {
   D: { name: "Доминирование (D)", color: "#c0392b", desc: "Ориентирован на результат, решителен, любит контроль. Силён в условиях давления и конкуренции. Может быть жёстким." },
   I: { name: "Влияние (I)", color: "#e67e22", desc: "Коммуникабелен, энергичен, умеет вовлекать. Отличный командный игрок и переговорщик. Может избегать деталей." },
@@ -260,7 +275,18 @@ export default function App() {
   if (screen === "result") {
     const { scores, raw, pct } = calcIQScore();
     const { counts, primary, secondary } = calcDISC();
-    const rank = getRank(pct);
+    const rankInfo = getRank(pct);
+    useEffect(() => {
+      sendToSheets({
+        date: new Date().toLocaleString("ru-RU"),
+        name: candidateName,
+        score: pct,
+        rank: rankInfo.label,
+        primary: DISC_PROFILES[primary].name,
+        secondary: DISC_PROFILES[secondary].name,
+        details: IQ_SECTIONS.map(s => `${s.label}: ${scores[s.key]}/${s.max}`).join(", ")
+      });
+    }, []);
     const pDisc = DISC_PROFILES[primary];
     const sDisc = DISC_PROFILES[secondary];
     const maxDisc = Math.max(...Object.values(counts));
@@ -270,8 +296,8 @@ export default function App() {
 
         <h2 style={{ ...s.h2, marginTop: "1.5rem" }}>Блок 1 — Сообразительность</h2>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
-          <span style={{ fontSize: 36, fontWeight: 500, color: rank.color }}>{pct}%</span>
-          <span style={s.tag(rank.color)}>{rank.label}</span>
+          <span style={{ fontSize: 36, fontWeight: 500, color: rankInfo.color }}>{pct}%</span>
+          <span style={s.tag(rankInfo.color)}>{rankInfo.label}</span>
         </div>
         <p style={s.muted}>{raw} правильных ответов из {totalIQ}</p>
         <div style={{ marginTop: "1rem" }}>
