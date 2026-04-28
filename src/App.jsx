@@ -225,59 +225,40 @@ export default function App() {
     const { counts, primary, secondary } = calcDISC();
     const rankInfo = getRank(pct);
     const date = new Date().toLocaleString("ru-RU");
-    const html = `
-      <html><head><meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; padding: 40px; color: #111; max-width: 700px; margin: 0 auto; }
-        h1 { font-size: 22px; margin-bottom: 4px; }
-        h2 { font-size: 16px; margin: 24px 0 12px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
-        .score { font-size: 40px; font-weight: bold; color: ${rankInfo.color}; }
-        .tag { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; background: ${rankInfo.color}22; color: ${rankInfo.color}; margin-left: 12px; vertical-align: middle; }
-        .row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 14px; }
-        .bar-wrap { height: 6px; background: #eee; border-radius: 3px; margin-top: 4px; }
-        .bar { height: 100%; border-radius: 3px; }
-        .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; }
-        .disc-label { font-size: 11px; font-weight: bold; margin-bottom: 4px; }
-        .disc-name { font-size: 15px; font-weight: bold; margin-bottom: 4px; }
-        .disc-desc { font-size: 13px; color: #666; }
-        .footer { margin-top: 32px; font-size: 12px; color: #999; text-align: center; }
-      </style></head><body>
-      <h1>Результаты тестирования</h1>
-      <div style="color:#666;font-size:13px;margin-bottom:16px;">Кандидат: <b>${candidateName}</b> · ${date}</div>
-      <h2>Блок 1 — Сообразительность</h2>
-      <div><span class="score">${pct}%</span><span class="tag">${rankInfo.label}</span></div>
-      <div style="font-size:13px;color:#666;margin:8px 0;">${raw} правильных ответов из ${totalIQ}</div>
-      ${IQ_SECTIONS.map(sec => {
-        const sc = scores[sec.key] || 0;
-        const p = Math.round((sc / sec.max) * 100);
-        const col = p >= 80 ? "#27ae60" : p >= 50 ? "#e67e22" : "#c0392b";
-        return `<div class="row"><span>${sec.label}</span><span>${sc}/${sec.max}</span></div>
-        <div class="bar-wrap"><div class="bar" style="width:${p}%;background:${col}"></div></div>`;
-      }).join("")}
-      <h2>Блок 2 — Психотип DISC</h2>
-      <div class="card" style="border-left:3px solid ${DISC_PROFILES[primary].color}">
-        <div class="disc-label" style="color:${DISC_PROFILES[primary].color}">Основной профиль</div>
-        <div class="disc-name">${DISC_PROFILES[primary].name}</div>
-        <div class="disc-desc">${DISC_PROFILES[primary].desc}</div>
-      </div>
-      <div class="card" style="border-left:3px solid ${DISC_PROFILES[secondary].color}">
-        <div class="disc-label" style="color:${DISC_PROFILES[secondary].color}">Вторичный профиль</div>
-        <div class="disc-name">${DISC_PROFILES[secondary].name}</div>
-        <div class="disc-desc">${DISC_PROFILES[secondary].desc}</div>
-      </div>
-      <h2>Распределение DISC</h2>
-      ${Object.entries(DISC_PROFILES).map(([k, v]) => {
-        const maxD = Math.max(...Object.values(counts));
-        const p = Math.round((counts[k] / maxD) * 100);
-        return `<div class="row"><span>${v.name}</span><span>${counts[k]}</span></div>
-        <div class="bar-wrap"><div class="bar" style="width:${p}%;background:${v.color}"></div></div>`;
-      }).join("")}
-      <div class="footer">Сформировано автоматически</div>
-      </body></html>`;
-    const win = window.open("", "_blank");
-    win.document.write(html);
-    win.document.close();
-    win.print();
+    const maxD = Math.max(...Object.values(counts));
+    const content = [
+      `РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ`,
+      ``,
+      `Кандидат: ${candidateName}`,
+      `Дата: ${date}`,
+      ``,
+      `=== БЛОК 1 — СООБРАЗИТЕЛЬНОСТЬ ===`,
+      `Итоговый балл: ${pct}% — ${rankInfo.label}`,
+      `Правильных ответов: ${raw} из ${totalIQ}`,
+      ``,
+      ...IQ_SECTIONS.map(sec => `${sec.label}: ${scores[sec.key] || 0}/${sec.max}`),
+      ``,
+      `=== БЛОК 2 — ПСИХОТИП DISC ===`,
+      `Основной профиль: ${DISC_PROFILES[primary].name}`,
+      DISC_PROFILES[primary].desc,
+      ``,
+      `Вторичный профиль: ${DISC_PROFILES[secondary].name}`,
+      DISC_PROFILES[secondary].desc,
+      ``,
+      `Распределение DISC:`,
+      ...Object.entries(DISC_PROFILES).map(([k, v]) => `  ${v.name}: ${counts[k]} баллов`),
+      ``,
+      `---`,
+      `Сформировано автоматически`,
+    ].join("\n");
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Результат_${candidateName}_${new Date().toLocaleDateString("ru-RU")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const s = {
