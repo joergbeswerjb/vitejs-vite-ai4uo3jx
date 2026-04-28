@@ -101,7 +101,18 @@ const IQ_SECTIONS = [
   { key: "speed", label: "Скорость решений", max: 7 },
 ];
 
-const SPEED_Q_IDS = IQ_QUESTIONS.map((q, i) => q.type === "speed" ? i : -1).filter(i => i >= 0);
+// Shuffle options and track correct answer index
+const SHUFFLED_QUESTIONS = IQ_QUESTIONS.map(q => {
+  const indexed = q.options.map((opt, i) => ({ opt, correct: i === q.ans }));
+  for (let i = indexed.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indexed[i], indexed[j]] = [indexed[j], indexed[i]];
+  }
+  const newAns = indexed.findIndex(o => o.correct);
+  return { ...q, options: indexed.map(o => o.opt), ans: newAns };
+});
+
+const SPEED_Q_IDS = SHUFFLED_QUESTIONS.map((q, i) => q.type === "speed" ? i : -1).filter(i => i >= 0);
 const SPEED_TIME = 10;
 
 export default function App() {
@@ -120,7 +131,7 @@ export default function App() {
 
   const calcIQScore = () => {
     let scores = { numeric: 0, verbal: 0, situational: 0, nonstandard: 0, speed: 0 };
-    IQ_QUESTIONS.forEach((q, i) => { if (iqAnswers[i] === q.ans) scores[q.type]++; });
+    IQ_QUESTIONS.forEach((q, i) => { if (iqAnswers[i] === SHUFFLED_QUESTIONS[i].ans) scores[q.type]++; });
     const raw = Object.values(scores).reduce((a, b) => a + b, 0);
     const pct = Math.round((raw / totalIQ) * 100);
     return { scores, raw, pct };
@@ -236,7 +247,7 @@ export default function App() {
   );
 
   if (screen === "iq") {
-    const q = IQ_QUESTIONS[currentQ];
+    const q = SHUFFLED_QUESTIONS[currentQ];
     const isSpeed = SPEED_Q_IDS.includes(currentQ);
     const answered = currentQ in iqAnswers;
     const to = timedOut[currentQ];
