@@ -118,7 +118,6 @@ export default function App() {
   const [candidateName, setCandidateName] = useState("");
   const sentRef = useRef(false);
 
-  // Shuffle options once per session
   const QUESTIONS = useMemo(() => RAW_QUESTIONS.map(q => {
     const indexed = q.options.map((opt, i) => ({ opt, correct: i === q.ans }));
     const shuffled = shuffle(indexed);
@@ -126,7 +125,6 @@ export default function App() {
   }), []);
 
   const SPEED_Q_IDS = useMemo(() => QUESTIONS.map((q, i) => q.type === "speed" ? i : -1).filter(i => i >= 0), [QUESTIONS]);
-
   const totalIQ = QUESTIONS.length;
   const totalDISC = DISC_PAIRS.length;
 
@@ -150,6 +148,45 @@ export default function App() {
     if (pct >= 65) return { label: "Выше среднего", color: "#2980b9" };
     if (pct >= 45) return { label: "Средний уровень", color: "#e67e22" };
     return { label: "Ниже ожиданий", color: "#c0392b" };
+  };
+
+  const downloadReport = () => {
+    const { scores, raw, pct } = calcIQScore();
+    const { counts, primary, secondary } = calcDISC();
+    const rankInfo = getRank(pct);
+    const date = new Date().toLocaleString("ru-RU");
+    const lines = [
+      `РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ`,
+      ``,
+      `Кандидат: ${candidateName}`,
+      `Дата: ${date}`,
+      ``,
+      `=== БЛОК 1 — СООБРАЗИТЕЛЬНОСТЬ ===`,
+      `Итоговый балл: ${pct}% — ${rankInfo.label}`,
+      `Правильных ответов: ${raw} из ${totalIQ}`,
+      ``,
+      ...IQ_SECTIONS.map(sec => `${sec.label}: ${scores[sec.key] || 0}/${sec.max}`),
+      ``,
+      `=== БЛОК 2 — ПСИХОТИП DISC ===`,
+      `Основной профиль: ${DISC_PROFILES[primary].name}`,
+      `${DISC_PROFILES[primary].desc}`,
+      ``,
+      `Вторичный профиль: ${DISC_PROFILES[secondary].name}`,
+      `${DISC_PROFILES[secondary].desc}`,
+      ``,
+      `Распределение DISC:`,
+      ...Object.entries(DISC_PROFILES).map(([k, v]) => `  ${v.name}: ${counts[k]} баллов`),
+      ``,
+      `---`,
+      `Сформировано автоматически`,
+    ].join("\n");
+    const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Результат_${candidateName}_${new Date().toLocaleDateString("ru-RU")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -220,45 +257,9 @@ export default function App() {
     setTimeout(() => goNext("disc"), 500);
   };
 
-  const downloadPDF = () => {
-    const { scores, raw, pct } = calcIQScore();
-    const { counts, primary, secondary } = calcDISC();
-    const rankInfo = getRank(pct);
-    const date = new Date().toLocaleString("ru-RU");
-    const maxD = Math.max(...Object.values(counts));
-    const content = [
-      `РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ`,
-      ``,
-      `Кандидат: ${candidateName}`,
-      `Дата: ${date}`,
-      ``,
-      `=== БЛОК 1 — СООБРАЗИТЕЛЬНОСТЬ ===`,
-      `Итоговый балл: ${pct}% — ${rankInfo.label}`,
-      `Правильных ответов: ${raw} из ${totalIQ}`,
-      ``,
-      ...IQ_SECTIONS.map(sec => `${sec.label}: ${scores[sec.key] || 0}/${sec.max}`),
-      ``,
-      `=== БЛОК 2 — ПСИХОТИП DISC ===`,
-      `Основной профиль: ${DISC_PROFILES[primary].name}`,
-      DISC_PROFILES[primary].desc,
-      ``,
-      `Вторичный профиль: ${DISC_PROFILES[secondary].name}`,
-      DISC_PROFILES[secondary].desc,
-      ``,
-      `Распределение DISC:`,
-      ...Object.entries(DISC_PROFILES).map(([k, v]) => `  ${v.name}: ${counts[k]} баллов`),
-      ``,
-      `---`,
-      `Сформировано автоматически`,
-    ].join("\n");
-
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Результат_${candidateName}_${new Date().toLocaleDateString("ru-RU")}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const resetAll = () => {
+    setScreen("intro"); setIqAnswers({}); setDiscAnswers({});
+    setCurrentQ(0); setTimedOut({}); setCandidateName(""); sentRef.current = false;
   };
 
   const s = {
@@ -419,19 +420,10 @@ export default function App() {
         </div>
         <div style={{ display: "flex", gap: 12, marginTop: "1.5rem", flexWrap: "wrap" }}>
           <button style={s.btnPrimary} onClick={resetAll}>← Пройти снова</button>
-          <button style={{ ...s.btnPrimary, background: "#2980b9", color: "#fff", border: "none" }} onClick={downloadPDF}>
-            ⬇ Скачать PDF
+          <button style={{ ...s.btnPrimary, background: "#2980b9", color: "#fff", border: "none" }} onClick={downloadReport}>
+            ⬇ Скачать отчёт
           </button>
         </div>
-        <style>{`
-          @media print {
-            body * { visibility: hidden; }
-            #result-print, #result-print * { visibility: visible; }
-            #result-print { position: absolute; left: 0; top: 0; width: 100%; }
-            button { display: none !important; }
-          }
-        `}</style>
-        <div id="result-print" style={{ display: "none" }} />
       </div>
     );
   }
