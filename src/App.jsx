@@ -4,67 +4,65 @@ const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwxZKU5KNXZDWpESG1Ni
 
 const sendToSheets = async (payload) => {
   try {
-    await fetch(SHEETS_URL, {
-      method: "POST", mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    await fetch(SHEETS_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   } catch (e) { console.error("Sheets error", e); }
 };
 
 const shuffle = (arr) => {
   const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 };
 
 const RAW_QUESTIONS = [
-  { type: "numeric", q: "Найдите следующее число: 2, 6, 18, 54, ?", options: ["108", "162", "126", "216"], ans: 1 },
-  { type: "numeric", q: "Если A > B и B > C, то верно ли что A > C?", options: ["Да", "Нет", "Не всегда", "Невозможно определить"], ans: 0 },
-  { type: "numeric", q: "Поезд едет 120 км за 1,5 часа. Какова скорость?", options: ["80 км/ч", "90 км/ч", "60 км/ч", "75 км/ч"], ans: 0 },
-  { type: "numeric", q: "Какое число лишнее: 4, 9, 16, 25, 35, 36?", options: ["4", "25", "35", "36"], ans: 2 },
-  { type: "numeric", q: "Ряд: 1, 4, 9, 16, 25, ?", options: ["30", "36", "49", "34"], ans: 1 },
-  { type: "numeric", q: "Ряд: 3, 7, 13, 21, 31, ?", options: ["41", "43", "45", "39"], ans: 1 },
-  { type: "numeric", q: "В команде 12 человек. 1/3 — менеджеры, остальные — исполнители. Сколько исполнителей?", options: ["4", "6", "8", "9"], ans: 2 },
-  { type: "numeric", q: "Товар подорожал на 20%, затем подешевел на 20%. Итоговая цена:", options: ["Та же", "Ниже на 4%", "Выше на 4%", "Ниже на 2%"], ans: 1 },
-  { type: "verbal", q: "«Горячий» : «холодный» = «быстрый» : ?", options: ["Скорость", "Медленный", "Бегун", "Время"], ans: 1 },
-  { type: "verbal", q: "Найдите лишнее: роза, тюльпан, береза, ромашка, пион", options: ["Роза", "Береза", "Ромашка", "Пион"], ans: 1 },
-  { type: "verbal", q: "«Педантичный» означает:", options: ["Легкомысленный", "Скрупулёзный и точный", "Общительный", "Ленивый"], ans: 1 },
-  { type: "verbal", q: "«Врач» : «пациент» = «судья» : ?", options: ["Закон", "Прокурор", "Обвиняемый", "Свидетель"], ans: 2 },
-  { type: "verbal", q: "Синоним слова «лаконичный»:", options: ["Красноречивый", "Краткий", "Подробный", "Запутанный"], ans: 1 },
-  { type: "verbal", q: "Найдите лишнее: молоток, пила, гвоздь, отвёртка, рубанок", options: ["Молоток", "Пила", "Гвоздь", "Отвёртка"], ans: 2 },
-  { type: "verbal", q: "«Апатия» — это:", options: ["Сильное возбуждение", "Безразличие и отсутствие интереса", "Чувство тревоги", "Радостное ожидание"], ans: 1 },
-  { type: "verbal", q: "Противоположное к «альтруизм»:", options: ["Щедрость", "Эгоизм", "Милосердие", "Доброта"], ans: 1 },
-  { type: "situational", q: "Ключевой сотрудник просит отгул в пик работы. Ваши действия?", options: ["Откажу", "Отпущу, найду замену сам", "Поговорю, выясню срочность и найдём решение вместе", "Попрошу решить с коллегами самостоятельно"], ans: 2 },
-  { type: "situational", q: "Нашли ошибку в отчёте, уже отправленном руководству. Что делаете?", options: ["Жду — вдруг не заметят", "Сообщу немедленно и предложу исправление", "Исправлю тихо если возможно", "Скажу что виноват коллега"], ans: 1 },
-  { type: "situational", q: "Клиент агрессивно жалуется, но компания права. Ваши действия?", options: ["Отстаиваю позицию жёстко", "Сразу уступлю", "Выслушаю, признаю неудобство, объясню спокойно", "Переключу на менеджера"], ans: 2 },
-  { type: "situational", q: "Два дедлайна одновременно, оба важны. Что делаете?", options: ["Берусь за оба", "Сообщу руководителю и попрошу помочь с приоритетами", "Выберу тот что проще", "Попрошу продления обоих"], ans: 1 },
-  { type: "situational", q: "Коллега делает задачу неправильно, но не просил вашего мнения.", options: ["Промолчу", "Скажу прямо при всех", "Скажу один на один тихо", "Сообщу руководителю"], ans: 2 },
-  { type: "situational", q: "Вам поручили задачу, в которой не уверены. Как поступите?", options: ["Попробую сам не признавая неуверенности", "Откажусь", "Уточню детали, попрошу примеры и сделаю", "Делегирую"], ans: 2 },
-  { type: "situational", q: "Проект провалился из-за непредвиденных обстоятельств. Реакция:", options: ["Ищу виноватых", "Признаю ошибки, анализирую, делаю выводы", "Замалчиваю", "Жду что само урегулируется"], ans: 1 },
-  { type: "situational", q: "Заметили улучшение процесса не в вашей зоне ответственности:", options: ["Промолчу — не моё", "Внесу изменения сам", "Опишу идею и передам ответственному", "Буду ждать пока спросят"], ans: 2 },
-  { type: "situational", q: "Руководитель дал задание с которым вы не согласны. Что делаете?", options: ["Выполню молча", "Открыто откажусь", "Выскажу мнение аргументированно, затем выполню решение руководителя", "Выполню спустя рукава"], ans: 2 },
-  { type: "situational", q: "В команде конфликт между двумя коллегами, мешающий работе. Вы:", options: ["Не вмешиваюсь", "Встаю на сторону того кто прав", "Организую разговор, помогаю найти компромисс", "Сообщу руководителю немедленно"], ans: 2 },
-  { type: "situational", q: "Задача без чётких инструкций и дедлайна. Ваш первый шаг:", options: ["Начну делать как понимаю", "Уточню цели, ожидания и сроки", "Отложу до прояснения", "Попрошу другую задачу"], ans: 1 },
-  { type: "situational", q: "Процесс в компании устарел и тормозит работу. Ваши действия:", options: ["Продолжаю работать по старому", "Самостоятельно меняю процесс", "Готовлю предложение с обоснованием и выхожу с инициативой", "Жалуюсь коллегам"], ans: 2 },
-  { type: "nonstandard", q: "Сколько раз можно сложить лист бумаги пополам?", options: ["Бесконечно", "Около 7 раз физически", "Ровно 10 раз", "Зависит только от размера"], ans: 1 },
-  { type: "nonstandard", q: "У фермера 17 овец. Все кроме 9 погибли. Сколько осталось?", options: ["8", "9", "17", "0"], ans: 1 },
-  { type: "nonstandard", q: "Что общего между деревом и компанией?", options: ["Оба растут", "Оба имеют ветви", "Оба требуют ресурсов", "Все варианты верны"], ans: 3 },
-  { type: "nonstandard", q: "Слово написано неправильно во всех словарях мира. Что это за слово?", options: ["Нет такого", "«Неправильно»", "Зависит от языка", "Это ошибка в задаче"], ans: 1 },
-  { type: "nonstandard", q: "Директор аэропорта нашёл бесхозный чемодан. Первый шаг:", options: ["Вызвать охрану и оцепить зону", "Открыть чемодан", "Объявить по громкоговорителю", "Сдать в полицию"], ans: 0 },
-  { type: "nonstandard", q: "Вас просят оценить количество теннисных мячей в автобусе. Ваш подход:", options: ["Откажусь — невозможно точно", "Уточню размеры и вычислю приближённо", "Назову случайное число", "Скажу что вопрос некорректный"], ans: 1 },
-  { type: "nonstandard", q: "Что тяжелее: килограмм железа или килограмм ваты?", options: ["Железо", "Вата", "Одинаково", "Зависит от условий"], ans: 2 },
-  { type: "nonstandard", q: "Как использовать кирпич помимо строительства?", options: ["Никак — он для стройки", "Как пресс-папье, подставку, груз для тренировок", "Разбить его", "Продать"], ans: 1 },
-  { type: "speed", q: "7 × 8 = ?", options: ["54", "56", "48", "63"], ans: 1 },
-  { type: "speed", q: "25% от 200 = ?", options: ["25", "50", "75", "100"], ans: 1 },
-  { type: "speed", q: "Если сегодня среда, какой день через 10 дней?", options: ["Пятница", "Суббота", "Воскресенье", "Среда"], ans: 1 },
-  { type: "speed", q: "Что больше: 3/4 или 7/9?", options: ["3/4", "7/9", "Равны", "Невозможно сравнить"], ans: 1 },
-  { type: "speed", q: "50 товаров, продали 40%. Сколько осталось?", options: ["20", "30", "10", "40"], ans: 1 },
-  { type: "speed", q: "15% от 80 = ?", options: ["10", "12", "15", "16"], ans: 1 },
-  { type: "speed", q: "5 рабочих делают 5 деталей за 5 минут. Сколько деталей сделают 10 рабочих за 10 минут?", options: ["10", "20", "25", "50"], ans: 1 },
+  // Числовая логика (8)
+  { type: "numeric", q: "Ряд: 1, 2, 6, 24, 120, ?", options: ["240", "720", "600", "360"], ans: 1 },
+  { type: "numeric", q: "Если за 5 дней 5 станков производят 5 деталей, сколько деталей произведут 100 станков за 100 дней?", options: ["100", "500", "1000", "2000"], ans: 3 },
+  { type: "numeric", q: "Лилипад удваивается каждый день и покрывает пруд за 48 дней. За сколько дней он покроет половину пруда?", options: ["24", "47", "36", "32"], ans: 1 },
+  { type: "numeric", q: "Верёвка делит площадь круга пополам. Сколько максимум частей можно получить из круга двумя верёвками?", options: ["3", "4", "5", "6"], ans: 1 },
+  { type: "numeric", q: "Батарейка теряет 20% заряда каждый час. Через сколько часов останется менее 50% от начального заряда?", options: ["2", "3", "4", "5"], ans: 1 },
+  { type: "numeric", q: "Ряд: 2, 3, 5, 8, 13, 21, ? Что следует?", options: ["29", "32", "34", "36"], ans: 2 },
+  { type: "numeric", q: "Компания выросла на 50%, затем упала на 50%. Итог относительно старта:", options: ["–25%", "0%", "+25%", "–50%"], ans: 0 },
+  { type: "numeric", q: "Сумма углов выпуклого многоугольника с 7 сторонами:", options: ["720°", "900°", "1080°", "540°"], ans: 1 },
+  // Вербальное мышление (8)
+  { type: "verbal", q: "Найдите лишнее: индукция, дедукция, абдукция, интуиция, редукция", options: ["Индукция", "Дедукция", "Интуиция", "Редукция"], ans: 2 },
+  { type: "verbal", q: "«Консенсус» означает:", options: ["Большинство голосов", "Единогласное согласие всех сторон", "Компромисс с уступками", "Решение руководителя"], ans: 1 },
+  { type: "verbal", q: "«Имплицитный» — противоположность слова:", options: ["Явный", "Сложный", "Двусмысленный", "Скрытый"], ans: 0 },
+  { type: "verbal", q: "Библиотека : книга = портфель : ?", options: ["Офис", "Документ", "Менеджер", "Папка"], ans: 1 },
+  { type: "verbal", q: "Найдите лишнее: рентабельность, ликвидность, амортизация, харизма, маржа", options: ["Рентабельность", "Ликвидность", "Амортизация", "Харизма"], ans: 3 },
+  { type: "verbal", q: "«Когнитивное искажение» — это:", options: ["Ошибка памяти из-за усталости", "Систематическая ошибка мышления влияющая на суждения", "Намеренное введение в заблуждение", "Расстройство внимания"], ans: 1 },
+  { type: "verbal", q: "Выберите пару с той же логикой что у «хирург : скальпель»:", options: ["Повар : кухня", "Программист : алгоритм", "Дирижёр : палочка", "Архитектор : здание"], ans: 2 },
+  { type: "verbal", q: "«Эфемерный» означает:", options: ["Загадочный и непонятный", "Кратковременный и мимолётный", "Тёмный и мрачный", "Чрезмерно сложный"], ans: 1 },
+  // Ситуативные задачи (12)
+  { type: "situational", q: "Вы PM. Клиент требует фичу которая принесёт ему ценность но разрушит архитектуру продукта долгосрочно. Ваш ход:", options: ["Сделаю — клиент всегда прав", "Откажу — архитектура важнее", "Объясню компромисс: сделаем временное решение и запланируем рефакторинг", "Передам решение техлиду"], ans: 2 },
+  { type: "situational", q: "Вы узнали что коллега берёт откат от поставщика. Доказательств нет, только косвенные признаки. Ваши действия:", options: ["Промолчу — нет доказательств", "Публично обвиню коллегу", "Сообщу руководителю о своих наблюдениях без обвинений", "Поговорю с коллегой напрямую"], ans: 2 },
+  { type: "situational", q: "Вас просят подписать отчёт с которым вы не полностью согласны но дедлайн через час. Что делаете:", options: ["Подпишу — нет времени разбираться", "Откажусь подписывать в любом случае", "Быстро зафиксирую свои возражения письменно и подпишу с оговоркой", "Попрошу перенести дедлайн"], ans: 2 },
+  { type: "situational", q: "Вы видите что проект провалится через месяц но руководство этого не замечает. Ваши действия:", options: ["Буду молчать — меня не спрашивали", "Подниму тревогу громко на общем совещании", "Подготовлю краткий анализ рисков и передам руководителю лично", "Начну искать другую работу"], ans: 2 },
+  { type: "situational", q: "Вы руководитель. Лучший сотрудник просит повышение которое вы не можете одобрить сейчас. Ваши действия:", options: ["Скажу просто «нет» — не время", "Пообещаю повышение чтобы удержать", "Объясню причины, дам чёткий план что нужно для повышения и назову срок", "Переведу разговор на другую тему"], ans: 2 },
+  { type: "situational", q: "Задача выполнена в срок но качество ниже ожидаемого. Команда устала. Сдаёте или доделываете:", options: ["Сдаю — срок важнее качества", "Доделаю сам не говоря команде", "Обсужу с заказчиком: покажу что есть, объясню ситуацию и согласую приоритет", "Скрою недостатки в презентации"], ans: 2 },
+  { type: "situational", q: "Два топ-менеджера дают вам противоречивые указания. Оба считают что правы. Ваши действия:", options: ["Выполню указание того кто старше по должности", "Сделаю то что считаю правильным сам", "Сведу обоих вместе чтобы они синхронизировались и дали единое решение", "Проигнорирую обоих до прояснения"], ans: 2 },
+  { type: "situational", q: "Вы операционный менеджер. Поставщик срывает дедлайн. Производство встанет через 2 дня. Первый шаг:", options: ["Жду — может сам исправится", "Сразу расторгну контракт", "Свяжусь с поставщиком прямо сейчас, параллельно активирую резервного поставщика", "Сообщу руководству и жду их решения"], ans: 2 },
+  { type: "situational", q: "Новый коллега явно некомпетентен но нанят по протекции. Это мешает работе команды. Ваши действия:", options: ["Буду работать вокруг него молча", "Открыто скажу что он некомпетентен", "Документирую конкретные случаи влияния на результат и обсужу с руководителем", "Настрою команду против него"], ans: 2 },
+  { type: "situational", q: "Клиент хочет скидку 30% угрожая уйти к конкуренту. Вы знаете что конкурент хуже. Ваши действия:", options: ["Сразу дам скидку чтобы не потерять", "Откажу — у нас лучше продукт", "Уточню реальные потребности, обосную ценность и предложу альтернативу скидке", "Скажу что конкурент плохой"], ans: 2 },
+  { type: "situational", q: "Вы заметили что регулярный процесс занимает 3 часа но можно автоматизировать за 1 день работы. Что делаете:", options: ["Продолжаю делать вручную — не моя зона", "Автоматизирую сам без согласования", "Оцениваю ROI, предлагаю руководителю с обоснованием и прошу добро", "Жду пока кто-то другой это сделает"], ans: 2 },
+  { type: "situational", q: "Вы провалили важные переговоры. Руководитель ждёт отчёт о причинах. Ваш подход:", options: ["Напишу что причины внешние — рынок, клиент", "Признаю ошибки, опишу что именно пошло не так и что сделаю иначе", "Минимизирую провал в отчёте", "Попрошу коллегу написать отчёт за меня"], ans: 1 },
+  // Нестандартное мышление (8)
+  { type: "nonstandard", q: "Сколько пианистов в Астане? Выберите наиболее логичный подход к оценке:", options: ["Невозможно оценить без данных", "Население ÷ средний размер класса × долю занимающихся музыкой", "Поискать в интернете", "Спросить в музыкальной школе"], ans: 1 },
+  { type: "nonstandard", q: "Вы можете взять с собой только одну вещь на необитаемый остров. Что выбрать с точки зрения выживания?", options: ["Нож", "Спички", "Спутниковый телефон", "Рыболовная сеть"], ans: 2 },
+  { type: "nonstandard", q: "Компания теряет клиентов. Данных почти нет. С чего начать диагностику?", options: ["Запустить рекламу чтобы привлечь новых", "Поговорить с 5-10 ушедшими клиентами напрямую", "Снизить цены", "Нанять консультанта"], ans: 1 },
+  { type: "nonstandard", q: "Если вы удвоите скорость работы но будете делать не то что нужно — результат:", options: ["Лучше — больше сделано", "Хуже — быстрее двигаетесь в неверном направлении", "Нейтральный — усилия компенсируют ошибку", "Зависит от ситуации"], ans: 1 },
+  { type: "nonstandard", q: "Мост выдерживает 10 тонн. Грузовик весит ровно 10 тонн. Водитель везёт 100 кг груза сверху. Как переехать?", options: ["Невозможно — превышение веса", "Разгрузить 100 кг и перевезти отдельно", "Открыть все окна чтобы уменьшить вес", "Проехать очень быстро"], ans: 1 },
+  { type: "nonstandard", q: "Вам нужно измерить 4 литра воды имея только кувшины на 3 и 5 литров. Сколько шагов минимум?", options: ["2", "3", "4", "Невозможно"], ans: 2 },
+  { type: "nonstandard", q: "Продукт продаётся плохо. Что проверить в первую очередь?", options: ["Цену — снизить", "Рекламу — усилить", "Понять кто покупает сейчас и почему — найти паттерн", "Добавить новые функции"], ans: 2 },
+  { type: "nonstandard", q: "Три лампочки в соседней комнате. Три выключателя здесь. Зайти можно только один раз. Как определить какой выключатель от какой лампы?", options: ["Невозможно за один заход", "Включить один, войти, потрогать лампочки — горячая = тот что был включён дольше", "Взять помощника", "Включить все и отметить"], ans: 1 },
+  // Скорость (7) — сложнее, без подсказок
+  { type: "speed", q: "Если A = 2B и B = 3C, то A/C = ?", options: ["5", "6", "8", "9"], ans: 1 },
+  { type: "speed", q: "Цена выросла с 80 до 100. Рост в процентах:", options: ["20%", "25%", "80%", "125%"], ans: 1 },
+  { type: "speed", q: "Поезд A едет 60 км/ч, поезд B — 90 км/ч навстречу. Расстояние 300 км. Через сколько минут встретятся?", options: ["100", "120", "150", "200"], ans: 1 },
+  { type: "speed", q: "2^10 = ?", options: ["512", "1024", "2048", "256"], ans: 1 },
+  { type: "speed", q: "Треугольник со сторонами 3, 4, 5 — какой угол напротив стороны 5?", options: ["60°", "90°", "45°", "120°"], ans: 1 },
+  { type: "speed", q: "Если x² = 49, то x может быть:", options: ["Только 7", "Только –7", "7 или –7", "Нет решений"], ans: 2 },
+  { type: "speed", q: "Вероятность выпадения орла дважды подряд:", options: ["1/2", "1/3", "1/4", "1/8"], ans: 2 },
 ];
 
 const DISC_PAIRS = [
@@ -105,7 +103,7 @@ const IQ_SECTIONS = [
   { key: "speed", label: "Скорость решений", max: 7 },
 ];
 
-const SPEED_TIME = 10;
+const SPEED_TIME = 12;
 
 export default function App() {
   const [screen, setScreen] = useState("intro");
@@ -132,8 +130,7 @@ export default function App() {
     let scores = { numeric: 0, verbal: 0, situational: 0, nonstandard: 0, speed: 0 };
     QUESTIONS.forEach((q, i) => { if (iqAnswers[i] === q.ans) scores[q.type]++; });
     const raw = Object.values(scores).reduce((a, b) => a + b, 0);
-    const pct = Math.round((raw / totalIQ) * 100);
-    return { scores, raw, pct };
+    return { scores, raw, pct: Math.round((raw / totalIQ) * 100) };
   };
 
   const calcDISC = () => {
@@ -150,41 +147,73 @@ export default function App() {
     return { label: "Ниже ожиданий", color: "#c0392b" };
   };
 
-  const downloadReport = () => {
+  const downloadPDF = () => {
     const { scores, raw, pct } = calcIQScore();
     const { counts, primary, secondary } = calcDISC();
     const rankInfo = getRank(pct);
     const date = new Date().toLocaleString("ru-RU");
-    const lines = [
-      `РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ`,
-      ``,
-      `Кандидат: ${candidateName}`,
-      `Дата: ${date}`,
-      ``,
-      `=== БЛОК 1 — СООБРАЗИТЕЛЬНОСТЬ ===`,
-      `Итоговый балл: ${pct}% — ${rankInfo.label}`,
-      `Правильных ответов: ${raw} из ${totalIQ}`,
-      ``,
-      ...IQ_SECTIONS.map(sec => `${sec.label}: ${scores[sec.key] || 0}/${sec.max}`),
-      ``,
-      `=== БЛОК 2 — ПСИХОТИП DISC ===`,
-      `Основной профиль: ${DISC_PROFILES[primary].name}`,
-      `${DISC_PROFILES[primary].desc}`,
-      ``,
-      `Вторичный профиль: ${DISC_PROFILES[secondary].name}`,
-      `${DISC_PROFILES[secondary].desc}`,
-      ``,
-      `Распределение DISC:`,
-      ...Object.entries(DISC_PROFILES).map(([k, v]) => `  ${v.name}: ${counts[k]} баллов`),
-      ``,
-      `---`,
-      `Сформировано автоматически`,
-    ].join("\n");
-    const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+    const maxD = Math.max(...Object.values(counts));
+
+    const barHtml = (val, max, col) => {
+      const p = Math.round((val / max) * 100);
+      const c = col || (p >= 80 ? "#27ae60" : p >= 50 ? "#e67e22" : "#c0392b");
+      return `<div style="height:6px;background:#eee;border-radius:3px;margin:4px 0 10px"><div style="height:100%;width:${p}%;background:${c};border-radius:3px"></div></div>`;
+    };
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Результаты · ${candidateName}</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:40px;color:#111;max-width:720px;margin:0 auto;font-size:14px}
+      h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;border-bottom:1px solid #eee;padding-bottom:6px;margin:24px 0 14px}
+      .score{font-size:38px;font-weight:bold}.tag{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:bold;margin-left:10px;vertical-align:middle}
+      .row{display:flex;justify-content:space-between;font-size:13px;margin:6px 0 2px}
+      .card{border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:10px}
+      .label{font-size:11px;font-weight:bold;margin-bottom:4px}.cname{font-size:14px;font-weight:bold;margin-bottom:4px}
+      .desc{font-size:12px;color:#666}.footer{margin-top:32px;font-size:11px;color:#aaa;text-align:center}
+      @media print{body{padding:20px}}
+    </style></head><body>
+    <h1>Результаты тестирования</h1>
+    <div style="color:#666;font-size:12px;margin-bottom:20px">Кандидат: <b>${candidateName}</b> &nbsp;·&nbsp; ${date}</div>
+    <h2>Блок 1 — Сообразительность</h2>
+    <div><span class="score" style="color:${rankInfo.color}">${pct}%</span>
+    <span class="tag" style="background:${rankInfo.color}22;color:${rankInfo.color}">${rankInfo.label}</span></div>
+    <div style="font-size:12px;color:#666;margin:8px 0 16px">${raw} правильных ответов из ${totalIQ}</div>
+    ${IQ_SECTIONS.map(sec => {
+      const sc = scores[sec.key] || 0;
+      return `<div class="row"><span>${sec.label}</span><span>${sc}/${sec.max}</span></div>${barHtml(sc, sec.max)}`;
+    }).join("")}
+    <h2>Блок 2 — Психотип DISC</h2>
+    <div class="card" style="border-left:3px solid ${DISC_PROFILES[primary].color}">
+      <div class="label" style="color:${DISC_PROFILES[primary].color}">Основной профиль</div>
+      <div class="cname">${DISC_PROFILES[primary].name}</div>
+      <div class="desc">${DISC_PROFILES[primary].desc}</div>
+    </div>
+    <div class="card" style="border-left:3px solid ${DISC_PROFILES[secondary].color}">
+      <div class="label" style="color:${DISC_PROFILES[secondary].color}">Вторичный профиль</div>
+      <div class="cname">${DISC_PROFILES[secondary].name}</div>
+      <div class="desc">${DISC_PROFILES[secondary].desc}</div>
+    </div>
+    <h2>Распределение DISC</h2>
+    ${Object.entries(DISC_PROFILES).map(([k, v]) =>
+      `<div class="row"><span>${v.name}</span><span>${counts[k]} / 20</span></div>${barHtml(counts[k], maxD, v.color)}`
+    ).join("")}
+    <h2>Рекомендация</h2>
+    <div class="card" style="background:#f9f9f9">
+      ${pct >= 65 && (primary === "D" || primary === "C")
+        ? "Аналитический склад ума + решительность. Подходит для управленческих и проектных ролей."
+        : pct >= 65 && (primary === "I" || primary === "S")
+        ? "Сильная коммуникация и надёжность. Хорошая база для операционных и клиентских ролей."
+        : pct < 65 && (primary === "D" || primary === "I")
+        ? "Активный кандидат. Рекомендуется дополнительная проверка аналитических навыков."
+        : "Стабильный профиль. Подходит для исполнительских ролей в структурированной среде."}
+    </div>
+    <div class="footer">Сформировано автоматически</div>
+    </body></html>`;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Результат_${candidateName}_${new Date().toLocaleDateString("ru-RU")}.txt`;
+    a.download = `Результат_${candidateName}_${new Date().toLocaleDateString("ru-RU")}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -195,19 +224,7 @@ export default function App() {
       const { scores, pct } = calcIQScore();
       const { primary, secondary } = calcDISC();
       const rankInfo = getRank(pct);
-      sendToSheets({
-        date: new Date().toLocaleString("ru-RU"),
-        name: candidateName,
-        score: pct,
-        rank: rankInfo.label,
-        primary: DISC_PROFILES[primary].name,
-        secondary: DISC_PROFILES[secondary].name,
-        numeric: scores.numeric,
-        verbal: scores.verbal,
-        situational: scores.situational,
-        nonstandard: scores.nonstandard,
-        speed: scores.speed,
-      });
+      sendToSheets({ date: new Date().toLocaleString("ru-RU"), name: candidateName, score: pct, rank: rankInfo.label, primary: DISC_PROFILES[primary].name, secondary: DISC_PROFILES[secondary].name, numeric: scores.numeric, verbal: scores.verbal, situational: scores.situational, nonstandard: scores.nonstandard, speed: scores.speed });
     }
   }, [screen]);
 
@@ -220,8 +237,10 @@ export default function App() {
           setTimeLeft(t => {
             if (t <= 1) {
               clearInterval(timerRef.current);
+              // Засчитываем неправильный ответ (-1 означает "нет ответа = неверно")
+              setIqAnswers(prev => ({ ...prev, [currentQ]: -1 }));
               setTimedOut(prev => ({ ...prev, [currentQ]: true }));
-              setTimeout(() => goNext("iq"), 400);
+              setTimeout(() => goNext("iq"), 600);
               return 0;
             }
             return t - 1;
@@ -233,15 +252,9 @@ export default function App() {
   }, [currentQ, screen]);
 
   const goNext = (mode) => {
-    clearInterval(timerRef.current);
-    setTimeLeft(null);
-    if (mode === "iq") {
-      if (currentQ < totalIQ - 1) setCurrentQ(q => q + 1);
-      else { setCurrentQ(0); setScreen("disc"); }
-    } else {
-      if (currentQ < totalDISC - 1) setCurrentQ(q => q + 1);
-      else setScreen("result");
-    }
+    clearInterval(timerRef.current); setTimeLeft(null);
+    if (mode === "iq") { if (currentQ < totalIQ - 1) setCurrentQ(q => q + 1); else { setCurrentQ(0); setScreen("disc"); } }
+    else { if (currentQ < totalDISC - 1) setCurrentQ(q => q + 1); else setScreen("result"); }
   };
 
   const answerIQ = (idx) => {
@@ -257,10 +270,7 @@ export default function App() {
     setTimeout(() => goNext("disc"), 500);
   };
 
-  const resetAll = () => {
-    setScreen("intro"); setIqAnswers({}); setDiscAnswers({});
-    setCurrentQ(0); setTimedOut({}); setCandidateName(""); sentRef.current = false;
-  };
+  const resetAll = () => { setScreen("intro"); setIqAnswers({}); setDiscAnswers({}); setCurrentQ(0); setTimedOut({}); setCandidateName(""); sentRef.current = false; };
 
   const s = {
     wrap: { padding: "1.5rem 1rem", maxWidth: 640, margin: "0 auto", fontFamily: "sans-serif" },
@@ -270,7 +280,7 @@ export default function App() {
     btn: { display: "block", width: "100%", padding: "12px 16px", marginBottom: 10, background: "#f5f5f5", border: "0.5px solid #ddd", borderRadius: 8, fontSize: 15, color: "#111", cursor: "pointer", textAlign: "left" },
     btnPrimary: { padding: "12px 24px", background: "#fff", border: "0.5px solid #999", borderRadius: 8, fontSize: 15, fontWeight: 500, color: "#111", cursor: "pointer", marginTop: "1rem" },
     progress: { height: 4, background: "#eee", borderRadius: 2, margin: "1rem 0" },
-    progressFill: (pct, col) => ({ height: "100%", width: `${pct}%`, background: col || "#333", borderRadius: 2, transition: "width 0.3s" }),
+    progressFill: (p, col) => ({ height: "100%", width: `${p}%`, background: col || "#333", borderRadius: 2, transition: "width 0.3s" }),
     card: { background: "#fff", border: "0.5px solid #ddd", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: 12 },
     tag: (col) => ({ display: "inline-block", fontSize: 12, padding: "3px 10px", borderRadius: 8, background: col + "22", color: col, fontWeight: 500, marginBottom: 8 }),
   };
@@ -278,7 +288,7 @@ export default function App() {
   if (screen === "intro") return (
     <div style={s.wrap}>
       <h1 style={s.h1}>Тест для кандидатов</h1>
-      <p style={s.muted}>Тест состоит из двух блоков:<br/>• Блок 1 — Сообразительность (43 вопроса)<br/>• Блок 2 — Психотип DISC (20 пар утверждений)<br/><br/>Ориентировочное время: 40–50 минут. Некоторые вопросы имеют ограничение по времени.</p>
+      <p style={s.muted}>Два блока:<br/>• Блок 1 — Сообразительность (43 вопроса)<br/>• Блок 2 — Психотип DISC (20 пар)<br/><br/>Время: 40–50 минут. Вопросы на скорость имеют таймер — не успел = неверно.</p>
       <div style={{ marginTop: "1.5rem" }}>
         <label style={{ ...s.muted, display: "block", marginBottom: 6 }}>Имя кандидата</label>
         <input value={candidateName} onChange={e => setCandidateName(e.target.value)} placeholder="Введите имя..." style={{ width: "100%", padding: "10px 12px", fontSize: 15, borderRadius: 8, border: "0.5px solid #ddd", background: "#f5f5f5", color: "#111", boxSizing: "border-box" }} />
@@ -301,9 +311,10 @@ export default function App() {
           <span style={s.muted}>{currentQ + 1} / {totalIQ}</span>
         </div>
         <div style={s.progress}><div style={s.progressFill(progPct)} /></div>
-        {isSpeed && timeLeft !== null && (
-          <div style={{ ...s.muted, marginBottom: 8, color: timeLeft <= 3 ? "#c0392b" : "#666" }}>⏱ {timeLeft} сек</div>
+        {isSpeed && timeLeft !== null && !answered && (
+          <div style={{ ...s.muted, marginBottom: 8, color: timeLeft <= 4 ? "#c0392b" : "#e67e22", fontWeight: 500 }}>⏱ {timeLeft} сек</div>
         )}
+        {to && !answered && <div style={{ ...s.muted, marginBottom: 8, color: "#c0392b" }}>⏱ Время вышло</div>}
         <div style={{ ...s.card, marginBottom: "1.5rem" }}>
           <p style={{ fontSize: 16, lineHeight: 1.6, margin: 0, color: "#111" }}>{q.q}</p>
         </div>
@@ -311,7 +322,7 @@ export default function App() {
           let border = "0.5px solid #ddd", bg = "#f5f5f5";
           if (answered || to) {
             if (i === q.ans) { border = "1.5px solid #27ae60"; bg = "#27ae6011"; }
-            else if (iqAnswers[currentQ] === i && i !== q.ans) { border = "1.5px solid #c0392b"; bg = "#c0392b11"; }
+            else if (iqAnswers[currentQ] === i) { border = "1.5px solid #c0392b"; bg = "#c0392b11"; }
           }
           return <button key={i} style={{ ...s.btn, border, background: bg }} onClick={() => answerIQ(i)}>{opt}</button>;
         })}
@@ -339,16 +350,9 @@ export default function App() {
         {["a", "b"].map(k => {
           const item = pair[k];
           const chosen = discAnswers[currentQ] === item.d;
-          return (
-            <button key={k} style={{ ...s.btn, border: chosen ? "1.5px solid #2980b9" : "0.5px solid #ddd", background: chosen ? "#2980b911" : "#f5f5f5" }}
-              onClick={() => answerDISC(item.d)}>{item.text}</button>
-          );
+          return <button key={k} style={{ ...s.btn, border: chosen ? "1.5px solid #2980b9" : "0.5px solid #ddd", background: chosen ? "#2980b911" : "#f5f5f5" }} onClick={() => answerDISC(item.d)}>{item.text}</button>;
         })}
-        {answered && (
-          <button style={s.btnPrimary} onClick={() => goNext("disc")}>
-            {currentQ < totalDISC - 1 ? "Следующая пара →" : "Посмотреть результат →"}
-          </button>
-        )}
+        {answered && <button style={s.btnPrimary} onClick={() => goNext("disc")}>{currentQ < totalDISC - 1 ? "Следующая пара →" : "Посмотреть результат →"}</button>}
       </div>
     );
   }
@@ -377,7 +381,7 @@ export default function App() {
               <div key={sec.key} style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ fontSize: 13, color: "#666" }}>{sec.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#111" }}>{sc}/{sec.max}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>{sc}/{sec.max}</span>
                 </div>
                 <div style={s.progress}><div style={s.progressFill(p, p >= 80 ? "#27ae60" : p >= 50 ? "#e67e22" : "#c0392b")} /></div>
               </div>
@@ -387,12 +391,12 @@ export default function App() {
         <h2 style={{ ...s.h2, marginTop: "2rem" }}>Блок 2 — Психотип DISC</h2>
         <div style={{ ...s.card, borderLeft: `3px solid ${pDisc.color}` }}>
           <div style={s.tag(pDisc.color)}>Основной профиль</div>
-          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px", color: "#111" }}>{pDisc.name}</p>
+          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px" }}>{pDisc.name}</p>
           <p style={{ ...s.muted, margin: 0 }}>{pDisc.desc}</p>
         </div>
         <div style={{ ...s.card, borderLeft: `3px solid ${sDisc.color}` }}>
           <div style={s.tag(sDisc.color)}>Вторичный профиль</div>
-          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px", color: "#111" }}>{sDisc.name}</p>
+          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 6px" }}>{sDisc.name}</p>
           <p style={{ ...s.muted, margin: 0 }}>{sDisc.desc}</p>
         </div>
         <div style={{ marginTop: "1rem" }}>
@@ -400,29 +404,24 @@ export default function App() {
             <div key={k} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                 <span style={{ fontSize: 13, color: "#666" }}>{v.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#111" }}>{counts[k]}</span>
+                <span style={{ fontSize: 13, fontWeight: 500 }}>{counts[k]}</span>
               </div>
-              <div style={s.progress}><div style={{ ...s.progressFill(Math.round((counts[k] / maxDisc) * 100), v.color) }} /></div>
+              <div style={s.progress}><div style={s.progressFill(Math.round((counts[k] / maxDisc) * 100), v.color)} /></div>
             </div>
           ))}
         </div>
         <div style={{ ...s.card, marginTop: "1.5rem", background: "#f5f5f5" }}>
-          <p style={{ fontSize: 13, fontWeight: 500, color: "#111", margin: "0 0 6px" }}>Рекомендация</p>
+          <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 6px" }}>Рекомендация</p>
           <p style={{ ...s.muted, margin: 0 }}>
-            {pct >= 65 && (primary === "D" || primary === "C")
-              ? "Аналитический склад ума + решительность. Подходит для управленческих и проектных ролей."
-              : pct >= 65 && (primary === "I" || primary === "S")
-              ? "Сильная коммуникация и надёжность. Хорошая база для операционных и клиентских ролей."
-              : pct < 65 && (primary === "D" || primary === "I")
-              ? "Активный кандидат. Рекомендуется дополнительная проверка аналитических навыков."
+            {pct >= 65 && (primary === "D" || primary === "C") ? "Аналитический склад ума + решительность. Подходит для управленческих и проектных ролей."
+              : pct >= 65 && (primary === "I" || primary === "S") ? "Сильная коммуникация и надёжность. Хорошая база для операционных и клиентских ролей."
+              : pct < 65 && (primary === "D" || primary === "I") ? "Активный кандидат. Рекомендуется дополнительная проверка аналитических навыков."
               : "Стабильный профиль. Подходит для исполнительских ролей в структурированной среде."}
           </p>
         </div>
         <div style={{ display: "flex", gap: 12, marginTop: "1.5rem", flexWrap: "wrap" }}>
           <button style={s.btnPrimary} onClick={resetAll}>← Пройти снова</button>
-          <button style={{ ...s.btnPrimary, background: "#2980b9", color: "#fff", border: "none" }} onClick={downloadReport}>
-            ⬇ Скачать отчёт
-          </button>
+          <button style={{ ...s.btnPrimary, background: "#2980b9", color: "#fff", border: "none" }} onClick={downloadPDF}>⬇ Скачать отчёт</button>
         </div>
       </div>
     );
