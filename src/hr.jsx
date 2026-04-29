@@ -1,10 +1,21 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwxZKU5KNXZDWpESG1NinBrWhInlAQ1Cqp0g71WZbuRF3XcPhmb_JEtf6cXykVb5d-m/exec";
 const HR_PASSWORD = "hr2024";
 
-const RANK_COLOR = { "A — Высокий потенциал": "#27ae60", "B — Выше среднего": "#2980b9", "C — Средний уровень": "#e67e22", "D — Ниже ожиданий": "#c0392b" };
-const DISC_COLOR = { "Доминирование (D)": "#c0392b", "Влияние (I)": "#e67e22", "Стабильность (S)": "#27ae60", "Соответствие (C)": "#2980b9" };
+const RANK_COLOR = {
+  "A — Высокий потенциал": "#27ae60",
+  "B — Выше среднего": "#2980b9",
+  "C — Средний уровень": "#e67e22",
+  "D — Ниже ожиданий": "#c0392b"
+};
+
+const DISC_COLOR = {
+  "Доминирование (D)": "#c0392b",
+  "Влияние (I)": "#e67e22",
+  "Стабильность (S)": "#27ae60",
+  "Соответствие (C)": "#2980b9"
+};
 
 const DISC_DATA = {
   "Доминирование (D)": {
@@ -13,7 +24,7 @@ const DISC_DATA = {
     not_for: ["Поддержка клиентов", "Монотонные операционные задачи", "Роли требующие высокой эмпатии", "Работа в тени без признания"],
   },
   "Влияние (I)": {
-    strengths: ["Продажи и переговоры", "Вдохновение команды", "Нетворкинг", "Презентации и публичные выступления"],
+    strengths: ["Продажи и переговоры", "Вдохновение команды", "Нетворкинг", "Презентации и выступления"],
     risks: ["Избегает деталей и рутины", "Обещает больше чем может выполнить", "Непоследователен, переключается между задачами", "Принимает решения на эмоциях"],
     not_for: ["Аналитика и работа с данными", "Контроль качества", "Задачи требующие усидчивости", "Финансовый учёт и отчётность"],
   },
@@ -32,7 +43,7 @@ const DISC_DATA = {
 const BELBIN_DATA = {
   "Генератор идей": {
     strengths: ["Нестандартные решения", "Инновации", "Выход из тупика", "Свежий взгляд на проблему"],
-    risks: ["Не доводит идеи до конца", "Игнорирует практические ограничения", "Плохо работает в жёстких структурах", "Может демотивировать команду нереалистичными идеями"],
+    risks: ["Не доводит идеи до конца", "Игнорирует практические ограничения", "Плохо работает в жёстких структурах", "Может демотивировать нереалистичными идеями"],
     not_for: ["Исполнение рутинных процессов", "Контроль качества", "Административная работа", "Роли с чётким регламентом"],
   },
   "Исследователь ресурсов": {
@@ -52,13 +63,13 @@ const BELBIN_DATA = {
   },
   "Аналитик-стратег": {
     strengths: ["Стратегическое мышление", "Объективная оценка", "Предотвращение ошибок", "Взвешенные решения"],
-    risks: ["Медленно принимает решения", "Демотивирует команду излишним скептицизмом", "Не вдохновляет и не мотивирует", "Чрезмерно критичен к идеям других"],
+    risks: ["Медленно принимает решения", "Демотивирует излишним скептицизмом", "Не вдохновляет и не мотивирует", "Чрезмерно критичен к идеям других"],
     not_for: ["Роли требующие быстрых решений", "Мотивация команды", "Продажи", "Публичные коммуникации"],
   },
   "Командный игрок": {
     strengths: ["Сплочение команды", "Дипломатия", "Поддержка в кризис", "Разрешение конфликтов"],
     risks: ["Избегает жёстких решений", "Не может уволить или отказать", "Медлит в конфликтах", "Слишком ориентирован на консенсус в ущерб скорости"],
-    not_for: ["Жёсткие переговоры", "Антикризисные решения требующие непопулярных мер", "Роли с жёсткими KPI", "Управление некомпетентными сотрудниками"],
+    not_for: ["Жёсткие переговоры", "Антикризисные решения с непопулярными мерами", "Роли с жёсткими KPI", "Управление некомпетентными сотрудниками"],
   },
   "Реализатор": {
     strengths: ["Дисциплина", "Надёжное исполнение", "Организация процессов", "Системность"],
@@ -68,12 +79,12 @@ const BELBIN_DATA = {
   "Контролёр качества": {
     strengths: ["Внимание к деталям", "Высокий стандарт", "Минимизация ошибок", "Финальная проверка"],
     risks: ["Создаёт узкое место — всё через него", "Парализует команду перфекционизмом", "Медленно выпускает результат", "Тревожность передаётся команде"],
-    not_for: ["Быстрые итерации", "Стартап с MVP-подходом", "Продажи", "Роли требующие скорости важнее качества"],
+    not_for: ["Быстрые итерации", "MVP-подход", "Продажи", "Роли где скорость важнее качества"],
   },
   "Специалист": {
     strengths: ["Глубокая экспертиза", "Высокая ценность в своей области", "Надёжный источник знаний"],
-    risks: ["Узкий кругозор вне своей области", "Сложно работает в кросс-функциональных командах", "Не видит общей картины", "Может защищать свою область в ущерб общему результату"],
-    not_for: ["Управленческие роли", "Кросс-функциональные задачи", "Роли требующие широкого взгляда", "Стратегическое планирование"],
+    risks: ["Узкий кругозор вне своей области", "Сложно работает кросс-функционально", "Не видит общей картины", "Защищает свою область в ущерб общему результату"],
+    not_for: ["Управленческие роли", "Кросс-функциональные задачи", "Стратегическое планирование"],
   },
 };
 
@@ -95,7 +106,11 @@ const SECTIONS = [
 const Bar = ({ val, max, color, height = 6 }) => {
   const p = Math.min(100, Math.round((val / max) * 100));
   const c = color || (p >= 80 ? "#27ae60" : p >= 50 ? "#e67e22" : "#c0392b");
-  return <div style={{ height, background: "#eee", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${p}%`, background: c, borderRadius: 3, transition: "width 0.4s" }} /></div>;
+  return (
+    <div style={{ height, background: "#eee", borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ height: "100%", width: p + "%", background: c, borderRadius: 3, transition: "width 0.4s" }} />
+    </div>
+  );
 };
 
 const Tag = ({ label, color }) => (
@@ -107,11 +122,80 @@ const RiskBlock = ({ title, items, color, icon }) => (
     <div style={{ fontSize: 12, fontWeight: 600, color, marginBottom: 6 }}>{icon} {title}</div>
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
       {items.map((item, i) => (
-        <div key={i} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, background: color + "11", color: "#333", border: `1px solid ${color}33` }}>{item}</div>
+        <div key={i} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, background: color + "11", color: "#333", border: "1px solid " + color + "33" }}>{item}</div>
       ))}
     </div>
   </div>
 );
+
+const AIInsight = ({ candidate }) => {
+  const [insight, setInsight] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    const score = Number(candidate["Балл % (макс 100)"]) || 0;
+    const prompt = `Ты — HR-эксперт в области закупок и снабжения. Проанализируй профиль кандидата и дай развёрнутую индивидуальную интерпретацию на русском языке.
+
+Данные кандидата:
+- Имя: ${candidate["Имя"]}
+- Балл сообразительности: ${score}% (${candidate["Ранг"]})
+- Числовая логика: ${candidate["Числовая логика (макс 8)"]}/8
+- Вербальное мышление: ${candidate["Вербальное мышление (макс 8)"]}/8
+- Ситуативные задачи: ${candidate["Ситуативные задачи (макс 12)"]}/12
+- Нестандартное мышление: ${candidate["Нестандартное мышление (макс 8)"]}/8
+- Скорость решений: ${candidate["Скорость решений (макс 7)"]}/7
+- DISC профиль (основной): ${candidate["DISC осн."]}
+- DISC профиль (вторичный): ${candidate["DISC втор."]}
+- Командная роль по Белбину (основная): ${candidate["Белбин осн."]}
+- Командная роль по Белбину (вторичная): ${candidate["Белбин втор."]}
+
+Контекст: отдел закупок и снабжения крупной компании. Группы: управление мастер-данными ERP, снабжение (indirect purchasing), проектные закупки (direct purchasing), качество поставщиков и рекламации, системные компоненты.
+
+Напиши анализ из 4 абзацев:
+1. Общий портрет кандидата — как его профиль проявляется в закупочной среде
+2. Сильные стороны — конкретно для работы в закупках/снабжении
+3. Зоны риска и слепые пятна — что может мешать в работе
+4. Рекомендация — для какой группы и роли из перечисленных подходит лучше всего и почему
+
+Пиши конкретно, без общих фраз. Используй профессиональный но живой язык.`;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(b => b.text || "").join("") || "Не удалось получить анализ.";
+      setInsight(text);
+      setDone(true);
+    } catch (e) {
+      setInsight("Ошибка при генерации анализа.");
+      setDone(true);
+    }
+    setLoading(false);
+  };
+
+  if (!done && !loading) return (
+    <button onClick={generate} style={{ padding: "10px 20px", background: "#6c5ce7", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+      ✦ Сгенерировать AI-анализ
+    </button>
+  );
+
+  if (loading) return (
+    <div style={{ fontSize: 13, color: "#888", padding: "12px 0" }}>Анализирую профиль кандидата...</div>
+  );
+
+  return (
+    <div style={{ fontSize: 13, color: "#333", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{insight}</div>
+  );
+};
 
 export default function App() {
   const [auth, setAuth] = useState(false);
@@ -127,6 +211,20 @@ export default function App() {
   const [filterBelbin, setFilterBelbin] = useState("all");
   const [search, setSearch] = useState("");
   const [view, setView] = useState("list");
+
+  const deleteCandidate = async (candidate) => {
+    if (!window.confirm("Удалить запись " + candidate["Имя"] + "?")) return;
+    try {
+      await fetch(SHEETS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", date: candidate["Дата"], name: candidate["Имя"] })
+      });
+      setCandidates(prev => prev.filter(c => !(c["Имя"] === candidate["Имя"] && c["Дата"] === candidate["Дата"])));
+      if (selected) setSelected(null);
+    } catch (e) { alert("Ошибка удаления"); }
+  };
 
   const login = () => {
     if (pass === HR_PASSWORD) { setAuth(true); loadData(); }
@@ -161,7 +259,6 @@ export default function App() {
     wrap: { padding: "1.25rem", maxWidth: 980, margin: "0 auto", fontFamily: "sans-serif", fontSize: 14 },
     h1: { fontSize: 20, fontWeight: 700, color: "#111", margin: 0 },
     h2: { fontSize: 15, fontWeight: 600, color: "#111", margin: "0 0 12px" },
-    h3: { fontSize: 13, fontWeight: 600, color: "#555", margin: "16px 0 8px", textTransform: "uppercase", letterSpacing: "0.5px" },
     card: { background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: 12 },
     row: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
     btn: (active) => ({ padding: "6px 14px", borderRadius: 8, border: "1px solid #ddd", background: active ? "#111" : "#fff", color: active ? "#fff" : "#333", cursor: "pointer", fontSize: 13, fontWeight: active ? 600 : 400 }),
@@ -178,8 +275,10 @@ export default function App() {
           <div style={s.h1}>HR-панель</div>
           <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>Введите пароль для доступа</div>
         </div>
-        <input type="password" value={pass} onChange={e => { setPass(e.target.value); setPassErr(false); }}
-          onKeyDown={e => e.key === "Enter" && login()} placeholder="Пароль..."
+        <input type="password" value={pass}
+          onChange={e => { setPass(e.target.value); setPassErr(false); }}
+          onKeyDown={e => e.key === "Enter" && login()}
+          placeholder="Пароль..."
           style={{ ...s.input, width: "100%", boxSizing: "border-box", marginBottom: 8, padding: "10px 14px", fontSize: 15, border: passErr ? "1.5px solid #c0392b" : "1px solid #ddd" }} />
         {passErr && <div style={{ color: "#c0392b", fontSize: 12, marginBottom: 8 }}>Неверный пароль</div>}
         <button style={{ ...s.btn(true), width: "100%", padding: "10px", fontSize: 15 }} onClick={login}>Войти</button>
@@ -206,7 +305,7 @@ export default function App() {
 
       <div style={{ ...s.card, padding: "0.75rem 1.25rem" }}>
         <div style={{ ...s.row, gap: 12 }}>
-          <input style={s.input} placeholder="🔍 Поиск по имени..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input style={s.input} placeholder="Поиск по имени..." value={search} onChange={e => setSearch(e.target.value)} />
           <select style={s.select} value={filterRank} onChange={e => setFilterRank(e.target.value)}>
             <option value="all">Все ранги</option>
             {ranks.map(r => <option key={r} value={r}>{r}</option>)}
@@ -220,12 +319,12 @@ export default function App() {
             {belbins.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
           {(filterRank !== "all" || filterDisc !== "all" || filterBelbin !== "all" || search) && (
-            <button style={s.btn(false)} onClick={() => { setFilterRank("all"); setFilterDisc("all"); setFilterBelbin("all"); setSearch(""); }}>✕ Сбросить</button>
+            <button style={s.btn(false)} onClick={() => { setFilterRank("all"); setFilterDisc("all"); setFilterBelbin("all"); setSearch(""); }}>Сбросить</button>
           )}
         </div>
       </div>
 
-      {loading && <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Загрузка данных...</div>}
+      {loading && <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Загрузка...</div>}
       {error && <div style={{ color: "#c0392b", padding: "1rem", textAlign: "center" }}>{error}</div>}
 
       {/* STATS */}
@@ -280,16 +379,21 @@ export default function App() {
             </div>
             <div style={{ ...s.card, flex: 1, minWidth: 280 }}>
               <div style={s.h2}>Белбин — топ ролей</div>
-              {Object.entries(candidates.reduce((acc, c) => { const r = c["Белбин осн."]; if (r) acc[r] = (acc[r] || 0) + 1; return acc; }, {}))
-                .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([role, cnt]) => (
-                  <div key={role} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 13 }}>{role}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{cnt}</span>
-                    </div>
-                    <Bar val={cnt} max={Math.max(1, candidates.length)} color="#6c5ce7" />
+              {Object.entries(
+                candidates.reduce((acc, c) => {
+                  const r = c["Белбин осн."];
+                  if (r) acc[r] = (acc[r] || 0) + 1;
+                  return acc;
+                }, {})
+              ).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([role, cnt]) => (
+                <div key={role} style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 13 }}>{role}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{cnt}</span>
                   </div>
-                ))}
+                  <Bar val={cnt} max={Math.max(1, candidates.length)} color="#6c5ce7" />
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -303,8 +407,8 @@ export default function App() {
               <div style={{ ...s.row, justifyContent: "space-between" }}>
                 <div style={{ fontSize: 13, color: "#2980b9", fontWeight: 600 }}>Выбрано: {compare.map(c => c["Имя"]).join(" vs ")}</div>
                 <div style={s.row}>
-                  {compare.length === 2 && <button style={s.btn(true)} onClick={() => setView("compare")}>Сравнить →</button>}
-                  <button style={s.btn(false)} onClick={() => setCompare([])}>✕ Сбросить</button>
+                  {compare.length === 2 && <button style={s.btn(true)} onClick={() => setView("compare")}>Сравнить</button>}
+                  <button style={s.btn(false)} onClick={() => setCompare([])}>Сбросить</button>
                 </div>
               </div>
             </div>
@@ -334,11 +438,14 @@ export default function App() {
                     <td style={{ padding: "8px 12px", fontWeight: 600 }}>{c["Имя"]}</td>
                     <td style={{ padding: "8px 12px", color: "#888", fontSize: 12 }}>{String(c["Дата"]).slice(0, 10)}</td>
                     <td style={{ padding: "8px 12px" }}><span style={{ fontWeight: 700, color: rankColor }}>{score}%</span></td>
-                    <td style={{ padding: "8px 12px" }}><Tag label={c["Ранг"]?.split(" — ")[0] || "-"} color={rankColor} /></td>
+                    <td style={{ padding: "8px 12px" }}><Tag label={(c["Ранг"] || "-").split(" — ")[0]} color={rankColor} /></td>
                     <td style={{ padding: "8px 12px", fontSize: 12, color: "#555" }}>{c["DISC осн."] || "-"}</td>
                     <td style={{ padding: "8px 12px", fontSize: 12, color: "#555" }}>{c["Белбин осн."] || "-"}</td>
                     <td style={{ padding: "8px 12px" }}>
-                      <button style={{ ...s.btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => { setSelected(c); }}>Открыть</button>
+                      <div style={s.row}>
+                        <button style={{ ...s.btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setSelected(c)}>Открыть</button>
+                        <button style={{ ...s.btn(false), padding: "4px 10px", fontSize: 12, color: "#c0392b", borderColor: "#c0392b" }} onClick={() => deleteCandidate(c)}>✕</button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -361,7 +468,7 @@ export default function App() {
                 <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>{String(c["Дата"]).slice(0, 10)}</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: 24, fontWeight: 700, color: rankColor }}>{score}%</span>
-                  <Tag label={c["Ранг"]?.split(" — ")[0] || "-"} color={rankColor} />
+                  <Tag label={(c["Ранг"] || "-").split(" — ")[0]} color={rankColor} />
                 </div>
                 <Bar val={score} max={100} color={rankColor} height={4} />
                 <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -378,8 +485,11 @@ export default function App() {
       {selected && (
         <div>
           <button style={{ ...s.btn(false), marginBottom: 16 }} onClick={() => setSelected(null)}>← Назад</button>
-
-          {/* Header */}
+          <div style={{ ...s.row, justifyContent: "flex-end", marginBottom: 12 }}>
+            <button style={{ ...s.btn(false), color: "#c0392b", borderColor: "#c0392b", fontSize: 13 }} onClick={() => deleteCandidate(selected)}>
+              🗑 Удалить запись
+            </button>
+          </div>
           <div style={s.card}>
             <div style={{ ...s.row, justifyContent: "space-between", marginBottom: 12 }}>
               <div>
@@ -396,7 +506,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Sections */}
           <div style={s.card}>
             <div style={s.h2}>Результаты по секциям</div>
             {SECTIONS.map(sec => {
@@ -414,9 +523,7 @@ export default function App() {
             })}
           </div>
 
-          {/* DISC + Belbin profiles */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {/* DISC */}
             <div style={{ ...s.card, flex: 1, minWidth: 280 }}>
               <div style={s.h2}>DISC-профиль</div>
               <div style={{ marginBottom: 6 }}>
@@ -427,14 +534,14 @@ export default function App() {
                 <Tag label={selected["DISC втор."] || "-"} color={DISC_COLOR[selected["DISC втор."]] || "#888"} />
                 <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>вторичный</span>
               </div>
-              {DISC_DATA[selected["DISC осн."]] && <>
-                <RiskBlock title="Сильные стороны" items={DISC_DATA[selected["DISC осн."]].strengths} color="#27ae60" icon="✓" />
-                <RiskBlock title="Зоны риска" items={DISC_DATA[selected["DISC осн."]].risks} color="#e67e22" icon="⚠" />
-                <RiskBlock title="Не подходит для" items={DISC_DATA[selected["DISC осн."]].not_for} color="#c0392b" icon="✕" />
-              </>}
+              {DISC_DATA[selected["DISC осн."]] && (
+                <>
+                  <RiskBlock title="Сильные стороны" items={DISC_DATA[selected["DISC осн."]].strengths} color="#27ae60" icon="✓" />
+                  <RiskBlock title="Зоны риска" items={DISC_DATA[selected["DISC осн."]].risks} color="#e67e22" icon="⚠" />
+                  <RiskBlock title="Не подходит для" items={DISC_DATA[selected["DISC осн."]].not_for} color="#c0392b" icon="✕" />
+                </>
+              )}
             </div>
-
-            {/* Belbin */}
             <div style={{ ...s.card, flex: 1, minWidth: 280 }}>
               <div style={s.h2}>Командная роль (Белбин)</div>
               <div style={{ marginBottom: 6 }}>
@@ -445,57 +552,19 @@ export default function App() {
                 <Tag label={selected["Белбин втор."] || "-"} color="#a29bfe" />
                 <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>вторичная</span>
               </div>
-              {BELBIN_DATA[selected["Белбин осн."]] && <>
-                <RiskBlock title="Сильные стороны" items={BELBIN_DATA[selected["Белбин осн."]].strengths} color="#27ae60" icon="✓" />
-                <RiskBlock title="Зоны риска" items={BELBIN_DATA[selected["Белбин осн."]].risks} color="#e67e22" icon="⚠" />
-                <RiskBlock title="Не подходит для" items={BELBIN_DATA[selected["Белбин осн."]].not_for} color="#c0392b" icon="✕" />
-              </>}
+              {BELBIN_DATA[selected["Белбин осн."]] && (
+                <>
+                  <RiskBlock title="Сильные стороны" items={BELBIN_DATA[selected["Белбин осн."]].strengths} color="#27ae60" icon="✓" />
+                  <RiskBlock title="Зоны риска" items={BELBIN_DATA[selected["Белбин осн."]].risks} color="#e67e22" icon="⚠" />
+                  <RiskBlock title="Не подходит для" items={BELBIN_DATA[selected["Белбин осн."]].not_for} color="#c0392b" icon="✕" />
+                </>
+              )}
             </div>
           </div>
 
-          {/* Combined insight */}
-          <div style={{ ...s.card, background: "#fafafa", border: "1px solid #e0e0e0" }}>
-            <div style={s.h2}>💡 Общий вывод по кандидату</div>
-            <div style={{ fontSize: 13, color: "#333", lineHeight: 1.7 }}>
-              {(() => {
-                const disc = selected["DISC осн."];
-                const belbin = selected["Белбин осн."];
-                const score = Number(selected["Балл % (макс 100)"]) || 0;
-                const rank = selected["Ранг"] || "";
-
-                let insight = "";
-
-                if (score >= 65) {
-                  insight += `Кандидат демонстрирует ${rank.includes("A") ? "исключительный" : "хороший"} уровень аналитического мышления. `;
-                } else {
-                  insight += `Аналитические способности кандидата на базовом уровне — рекомендуются роли с чётким руководством. `;
-                }
-
-                if (disc === "Доминирование (D)" && (belbin === "Мотиватор" || belbin === "Координатор")) {
-                  insight += `Сочетание D + ${belbin} даёт сильного лидера результата, но высок риск конфликтов с другими сильными личностями в команде. `;
-                } else if (disc === "Влияние (I)" && (belbin === "Генератор идей" || belbin === "Исследователь ресурсов")) {
-                  insight += `Сочетание I + ${belbin} — отличный человек для старта и продвижения проектов, но нуждается в партнёре-реализаторе рядом. `;
-                } else if (disc === "Стабильность (S)" && (belbin === "Командный игрок" || belbin === "Реализатор")) {
-                  insight += `Сочетание S + ${belbin} — надёжная опора команды. Хорошо работает в стабильной структуре, плохо — в условиях постоянных изменений. `;
-                } else if (disc === "Соответствие (C)" && (belbin === "Контролёр качества" || belbin === "Аналитик-стратег")) {
-                  insight += `Сочетание C + ${belbin} — высокий стандарт и точность, но риск узкого места: всё будет проходить через него и замедлять процессы. `;
-                } else {
-                  insight += `Профиль ${disc} + ${belbin} — ${disc?.includes("D") || disc?.includes("I") ? "активный, ориентированный на внешний результат" : "стабильный, ориентированный на процесс и качество"} кандидат. `;
-                }
-
-                if (score >= 65 && (disc === "Доминирование (D)" || disc === "Соответствие (C)")) {
-                  insight += `Рекомендуется для управленческих и проектных ролей.`;
-                } else if (score >= 65 && (disc === "Влияние (I)" || disc === "Стабильность (S)")) {
-                  insight += `Рекомендуется для операционных и клиентских ролей.`;
-                } else if (score < 65 && (disc === "Доминирование (D)" || disc === "Влияние (I)")) {
-                  insight += `Рекомендуется дополнительная проверка аналитических навыков перед назначением на самостоятельную роль.`;
-                } else {
-                  insight += `Рекомендуется для исполнительских ролей в структурированной среде.`;
-                }
-
-                return insight;
-              })()}
-            </div>
+          <div style={{ ...s.card, background: "#fafafa" }}>
+            <div style={s.h2}>✦ AI-анализ кандидата</div>
+            <AIInsight candidate={selected} />
           </div>
         </div>
       )}
@@ -535,7 +604,7 @@ export default function App() {
                     <Tag label={c["Белбин осн."] || "-"} color="#6c5ce7" />
                     {DISC_DATA[c["DISC осн."]] && (
                       <div style={{ marginTop: 12 }}>
-                        <div style={{ fontSize: 12, color: "#c0392b", fontWeight: 600, marginBottom: 6 }}>✕ Не подходит для</div>
+                        <div style={{ fontSize: 12, color: "#c0392b", fontWeight: 600, marginBottom: 6 }}>Не подходит для</div>
                         {DISC_DATA[c["DISC осн."]].not_for.map((item, i) => (
                           <div key={i} style={{ fontSize: 12, padding: "3px 8px", borderRadius: 6, background: "#c0392b11", color: "#333", marginBottom: 4 }}>{item}</div>
                         ))}
