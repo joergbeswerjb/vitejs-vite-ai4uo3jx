@@ -1,10 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
 import App from './App.jsx'
+import HR from './hr.jsx'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const path = window.location.pathname;
+const root = createRoot(document.getElementById('root'));
+
+if (path === '/hr') {
+  root.render(<StrictMode><HR /></StrictMode>);
+} else {
+  root.render(<StrictMode><App /></StrictMode>);
+}
