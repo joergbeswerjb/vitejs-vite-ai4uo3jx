@@ -184,12 +184,9 @@ export default function App() {
   const deleteCandidate = async (candidate) => {
     if (!window.confirm("Удалить запись " + candidate["Имя"] + "?")) return;
     try {
-      await fetch(SHEETS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", date: candidate["Дата"], name: candidate["Имя"] })
-      });
+      const date = String(candidate["Дата"]).slice(0, 10);
+      const name = encodeURIComponent(candidate["Имя"]);
+      await fetch(`${SHEETS_URL}?action=delete&name=${name}&date=${date}`);
       setCandidates(prev => prev.filter(c => !(c["Имя"] === candidate["Имя"] && c["Дата"] === candidate["Дата"])));
       if (selected) setSelected(null);
     } catch (e) { alert("Ошибка удаления"); }
