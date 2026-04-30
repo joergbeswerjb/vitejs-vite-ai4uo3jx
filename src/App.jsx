@@ -300,20 +300,33 @@ export default function App() {
 
   if (screen === "intro") return (
     <div style={s.wrap}>
-      <h1 style={s.h1}>Оценочный тест кандидата</h1>
-      <p style={s.muted}>Добро пожаловать. Этот тест помогает нам лучше понять ваш стиль мышления и работы в команде.</p>
-      <div style={s.rule} />
-      <h2 style={{ ...s.h2, marginTop: 0 }}>Структура теста</h2>
-      <p style={s.muted}><b>Блок 1 — Логика и мышление</b> (43 вопроса, ~25 мин)<br/>Задачи на числовую логику, вербальное мышление, ситуативные и нестандартные задачи. Часть вопросов имеет таймер.</p>
-      <p style={s.muted}><b>Блок 2 — Стиль работы</b> (20 вопросов, ~10 мин)<br/>Вопросы о том как вы обычно действуете в рабочих ситуациях. Таймер 15 секунд на вопрос.</p>
-      <p style={s.muted}><b>Блок 3 — Командная роль</b> (18 вопросов, ~10 мин)<br/>Вопросы о вашей роли в командной работе.</p>
-      <div style={s.rule} />
-      <h2 style={{ ...s.h2, marginTop: 0 }}>Важно знать</h2>
-      <p style={s.muted}>• В блоках 2 и 3 нет правильных и неправильных ответов — только честные<br/>• Результаты видит только HR — вам они не отображаются<br/>• Отвечайте быстро и интуитивно — первый ответ обычно точнее<br/>• Общее время: около 45 минут</p>
-      <div style={s.rule} />
-      <label style={{ ...s.muted, display: "block", marginBottom: 8, fontWeight: 600 }}>Ваше имя</label>
-      <input value={candidateName} onChange={e => setCandidateName(e.target.value)} placeholder="Введите имя и фамилию..." style={{ width: "100%", padding: "11px 14px", fontSize: 15, borderRadius: 10, border: "1px solid #ddd", background: "#fafafa", color: "#111", boxSizing: "border-box" }} />
-      <button style={s.btnPrimary} onClick={() => { if (candidateName.trim()) { sentRef.current = false; setScreen("iq"); } }}>Начать тест →</button>
+      <div style={s.header}>
+        <img src="/stadler-logo.png" alt="Stadler" style={s.logo} />
+        <span style={s.headerTitle}>Оценка кандидатов · Отдел закупок и снабжения</span>
+      </div>
+      <div style={s.content}>
+        <h1 style={s.h1}>Оценочный тест кандидата</h1>
+        <p style={s.muted}>Добро пожаловать. Этот тест помогает нам лучше понять ваш стиль мышления и работы в команде.</p>
+        <div style={s.divider} />
+        <h2 style={s.h2}>Структура теста</h2>
+        <p style={s.muted}><b>Блок 1 — Логика и мышление</b> (43 вопроса, ~25 мин)<br/>Задачи на числовую логику, вербальное мышление, ситуативные и нестандартные задачи. Часть вопросов имеет таймер.</p>
+        <p style={s.muted}><b>Блок 2 — Стиль работы</b> (20 вопросов, ~10 мин)<br/>Вопросы о том как вы обычно действуете в рабочих ситуациях. Таймер 15 секунд на вопрос.</p>
+        <p style={s.muted}><b>Блок 3 — Командная роль</b> (18 вопросов, ~10 мин)<br/>Вопросы о вашей роли в командной работе.</p>
+        <div style={s.divider} />
+        <h2 style={s.h2}>Важно знать</h2>
+        <div style={s.accentCard}>
+          <p style={{ ...s.muted, margin: 0 }}>
+            • В блоках 2 и 3 нет правильных и неправильных ответов — только честные<br/>
+            • Результаты видит только HR — вам они не отображаются<br/>
+            • Отвечайте быстро и интуитивно — первый ответ обычно точнее<br/>
+            • Общее время: около 45 минут
+          </p>
+        </div>
+        <div style={s.divider} />
+        <label style={{ ...s.muted, display: "block", marginBottom: 8, fontWeight: 700, color: BRAND.blue }}>Ваше имя</label>
+        <input value={candidateName} onChange={e => setCandidateName(e.target.value)} placeholder="Введите имя и фамилию..." style={{ width: "100%", padding: "11px 14px", fontSize: 15, borderRadius: 4, border: `1px solid ${BRAND.border}`, background: BRAND.gray, color: BRAND.darkGray, boxSizing: "border-box" }} />
+        <button style={s.btnPrimary} onClick={() => { if (candidateName.trim()) { sentRef.current = false; setScreen("iq"); } }}>Начать тест →</button>
+      </div>
     </div>
   );
 
@@ -326,23 +339,36 @@ export default function App() {
     const prog = Math.round(((currentQ + 1) / totalIQ) * 100);
     return (
       <div style={s.wrap}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={s.small}>Блок 1 · {label}</span>
-          <span style={s.small}>{currentQ + 1} / {totalIQ}</span>
+        <div style={s.header}>
+          <img src="/stadler-logo.png" alt="Stadler" style={s.logo} />
+          <span style={s.headerTitle}>Блок 1 · {label}</span>
         </div>
-        <div style={s.progress}><div style={s.fill(prog)} /></div>
-        {isSpeed && timeLeft !== null && !answered && <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: timeLeft <= 4 ? "#c0392b" : "#e67e22" }}>⏱ {timeLeft} сек</div>}
-        {to && <div style={{ fontSize: 13, color: "#c0392b", marginBottom: 10 }}>⏱ Время вышло</div>}
-        <div style={s.card}><p style={{ fontSize: 15, lineHeight: 1.7, margin: 0 }}>{q.q}</p></div>
-        {q.options.map((opt, i) => {
-          let border = "1px solid #e0e0e0", bg = "#f7f7f7";
-          if (answered || to) {
-            if (i === q.ans) { border = "1.5px solid #27ae60"; bg = "#27ae6011"; }
-            else if (iqAnswers[currentQ] === i) { border = "1.5px solid #c0392b"; bg = "#c0392b11"; }
-          }
-          return <button key={i} style={{ ...s.btn, border, background: bg }} onClick={() => answerIQ(i)}>{opt}</button>;
-        })}
-        {(answered || to) && <button style={s.btnPrimary} onClick={() => goNext("iq")}>{currentQ < totalIQ - 1 ? "Следующий →" : "Перейти к блоку 2 →"}</button>}
+        <div style={s.content}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={s.small}>Вопрос {currentQ + 1} из {totalIQ}</span>
+            {isSpeed && timeLeft !== null && !answered && (
+              <span style={{ fontSize: 13, fontWeight: 700, color: timeLeft <= 4 ? "#c0392b" : BRAND.green }}>⏱ {timeLeft} сек</span>
+            )}
+          </div>
+          <div style={s.progress}><div style={s.fill(prog)} /></div>
+          {to && <div style={{ fontSize: 13, color: "#c0392b", marginBottom: 10, fontWeight: 600 }}>⏱ Время вышло</div>}
+          <div style={{ ...s.card, borderLeft: `4px solid ${BRAND.blue}`, marginBottom: "1.25rem" }}>
+            <p style={{ fontSize: 15, lineHeight: 1.7, margin: 0, color: BRAND.darkGray }}>{q.q}</p>
+          </div>
+          {q.options.map((opt, i) => {
+            let border = `1px solid ${BRAND.border}`, bg = BRAND.gray;
+            if (answered || to) {
+              if (i === q.ans) { border = `2px solid #27ae60`; bg = "#27ae6011"; }
+              else if (iqAnswers[currentQ] === i) { border = `2px solid #c0392b`; bg = "#c0392b11"; }
+            }
+            return <button key={i} style={{ ...s.btn, border, background: bg }} onClick={() => answerIQ(i)}>{opt}</button>;
+          })}
+          {(answered || to) && (
+            <button style={s.btnPrimary} onClick={() => goNext("iq")}>
+              {currentQ < totalIQ - 1 ? "Следующий вопрос →" : "Перейти к блоку 2 →"}
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -353,19 +379,28 @@ export default function App() {
     const prog = Math.round(((currentQ + 1) / totalDISC) * 100);
     return (
       <div style={s.wrap}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={s.small}>Блок 2 · Стиль работы</span>
-          <span style={s.small}>{currentQ + 1} / {totalDISC}</span>
+        <div style={s.header}>
+          <img src="/stadler-logo.png" alt="Stadler" style={s.logo} />
+          <span style={s.headerTitle}>Блок 2 · Стиль работы</span>
         </div>
-        <div style={s.progress}><div style={s.fill(prog, "#e67e22")} /></div>
-        {timeLeft !== null && !answered && <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: timeLeft <= 5 ? "#c0392b" : "#e67e22" }}>⏱ {timeLeft} сек</div>}
-        <p style={{ ...s.small, marginBottom: 8 }}>Выберите вариант который <b>точнее всего</b> описывает вас:</p>
-        <div style={s.card}><p style={{ fontSize: 15, lineHeight: 1.7, margin: 0 }}>{q.q}</p></div>
-        {q.options.map((opt, i) => {
-          const chosen = discAnswers[currentQ] === opt.d;
-          return <button key={i} style={{ ...s.btn, border: chosen ? "1.5px solid #e67e22" : "1px solid #e0e0e0", background: chosen ? "#e67e2211" : "#f7f7f7" }} onClick={() => answerDISC(opt.d)}>{opt.text}</button>;
-        })}
-        {answered && <button style={s.btnPrimary} onClick={() => goNext("disc")}>{currentQ < totalDISC - 1 ? "Следующий →" : "Перейти к блоку 3 →"}</button>}
+        <div style={s.content}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={s.small}>Вопрос {currentQ + 1} из {totalDISC}</span>
+            {timeLeft !== null && !answered && (
+              <span style={{ fontSize: 13, fontWeight: 700, color: timeLeft <= 5 ? "#c0392b" : BRAND.green }}>⏱ {timeLeft} сек</span>
+            )}
+          </div>
+          <div style={s.progress}><div style={s.fill(prog, BRAND.green)} /></div>
+          <p style={{ ...s.small, marginBottom: 8 }}>Выберите вариант который <b>точнее всего</b> описывает вас:</p>
+          <div style={{ ...s.card, borderLeft: `4px solid ${BRAND.green}`, marginBottom: "1.25rem" }}>
+            <p style={{ fontSize: 15, lineHeight: 1.7, margin: 0, color: BRAND.darkGray }}>{q.q}</p>
+          </div>
+          {q.options.map((opt, i) => {
+            const chosen = discAnswers[currentQ] === opt.d;
+            return <button key={i} style={{ ...s.btn, border: chosen ? `2px solid ${BRAND.blue}` : `1px solid ${BRAND.border}`, background: chosen ? BRAND.blue + "11" : BRAND.gray }} onClick={() => answerDISC(opt.d)}>{opt.text}</button>;
+          })}
+          {answered && <button style={s.btnPrimary} onClick={() => goNext("disc")}>{currentQ < totalDISC - 1 ? "Следующий →" : "Перейти к блоку 3 →"}</button>}
+        </div>
       </div>
     );
   }
@@ -376,32 +411,45 @@ export default function App() {
     const prog = Math.round(((currentQ + 1) / totalBelbin) * 100);
     return (
       <div style={s.wrap}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={s.small}>Блок 3 · Командная роль</span>
-          <span style={s.small}>{currentQ + 1} / {totalBelbin}</span>
+        <div style={s.header}>
+          <img src="/stadler-logo.png" alt="Stadler" style={s.logo} />
+          <span style={s.headerTitle}>Блок 3 · Командная роль</span>
         </div>
-        <div style={s.progress}><div style={s.fill(prog, "#2980b9")} /></div>
-        <p style={{ ...s.small, marginBottom: 8 }}>Выберите вариант который <b>точнее всего</b> описывает вас в команде:</p>
-        <div style={s.card}><p style={{ fontSize: 15, lineHeight: 1.7, margin: 0 }}>{q.q}</p></div>
-        {q.options.map((opt, i) => {
-          const chosen = belbinAnswers[currentQ] === opt.r;
-          return <button key={i} style={{ ...s.btn, border: chosen ? "1.5px solid #2980b9" : "1px solid #e0e0e0", background: chosen ? "#2980b911" : "#f7f7f7" }} onClick={() => answerBelbin(opt.r)}>{opt.text}</button>;
-        })}
-        {answered && <button style={s.btnPrimary} onClick={() => goNext("belbin")}>{currentQ < totalBelbin - 1 ? "Следующий →" : "Завершить тест →"}</button>}
+        <div style={s.content}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={s.small}>Вопрос {currentQ + 1} из {totalBelbin}</span>
+          </div>
+          <div style={s.progress}><div style={s.fill(prog, BRAND.lightBlue)} /></div>
+          <p style={{ ...s.small, marginBottom: 8 }}>Выберите вариант который <b>точнее всего</b> описывает вас в команде:</p>
+          <div style={{ ...s.card, borderLeft: `4px solid ${BRAND.lightBlue}`, marginBottom: "1.25rem" }}>
+            <p style={{ fontSize: 15, lineHeight: 1.7, margin: 0, color: BRAND.darkGray }}>{q.q}</p>
+          </div>
+          {q.options.map((opt, i) => {
+            const chosen = belbinAnswers[currentQ] === opt.r;
+            return <button key={i} style={{ ...s.btn, border: chosen ? `2px solid ${BRAND.lightBlue}` : `1px solid ${BRAND.border}`, background: chosen ? BRAND.lightBlue + "11" : BRAND.gray }} onClick={() => answerBelbin(opt.r)}>{opt.text}</button>;
+          })}
+          {answered && <button style={s.btnPrimary} onClick={() => goNext("belbin")}>{currentQ < totalBelbin - 1 ? "Следующий →" : "Завершить тест →"}</button>}
+        </div>
       </div>
     );
   }
 
   if (screen === "done") return (
-    <div style={{ ...s.wrap, textAlign: "center", paddingTop: "4rem" }}>
-      <div style={{ fontSize: 56, marginBottom: 16 }}>✓</div>
-      <h1 style={{ ...s.h1, textAlign: "center" }}>Тест завершён</h1>
-      <p style={{ ...s.muted, textAlign: "center", marginTop: 12 }}>
-        Спасибо, <b>{candidateName}</b>!<br/><br/>
-        Ваши результаты переданы HR-менеджеру.<br/>
-        Мы свяжемся с вами в ближайшее время.
-      </p>
-      <button style={{ ...s.btnPrimary, background: "#eee", color: "#333", marginTop: 32 }} onClick={resetAll}>← Пройти снова</button>
+    <div style={s.wrap}>
+      <div style={s.header}>
+        <img src="/stadler-logo.png" alt="Stadler" style={s.logo} />
+        <span style={s.headerTitle}>Оценка кандидатов</span>
+      </div>
+      <div style={{ ...s.content, textAlign: "center", paddingTop: "4rem" }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: BRAND.green, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", fontSize: 28 }}>✓</div>
+        <h1 style={{ ...s.h1, textAlign: "center" }}>Тест завершён</h1>
+        <p style={{ ...s.muted, textAlign: "center", marginTop: 12 }}>
+          Спасибо, <b>{candidateName}</b>!<br/><br/>
+          Ваши результаты переданы HR-менеджеру.<br/>
+          Мы свяжемся с вами в ближайшее время.
+        </p>
+        <button style={{ ...s.btnPrimary, background: BRAND.gray, color: BRAND.blue, marginTop: 32, border: `1px solid ${BRAND.blue}` }} onClick={resetAll}>← Пройти снова</button>
+      </div>
     </div>
   );
 
