@@ -136,7 +136,11 @@ const IQ_SECTIONS = [
   { key: "speed", label: "Скорость решений", max: 7 },
 ];
 
-const SPEED_TIME = 15;
+const StadlerLogo = () => (
+  <svg height="28" viewBox="0 0 160 28" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="22" fontFamily="Arial, sans-serif" fontSize="22" fontWeight="900" fill="#fff" letterSpacing="3">STADLER</text>
+  </svg>
+);
 const DISC_TIME = 15;
 
 const BRAND = {
