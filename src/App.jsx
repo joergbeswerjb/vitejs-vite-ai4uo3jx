@@ -139,6 +139,15 @@ const IQ_SECTIONS = [
 const SPEED_TIME = 15;
 const DISC_TIME = 15;
 
+const BRAND = {
+  blue: "#003D7C",
+  green: "#C8D400",
+  lightBlue: "#0069B4",
+  gray: "#F4F4F4",
+  darkGray: "#333333",
+  border: "#E0E0E0",
+};
+
 export default function App() {
   const [screen, setScreen] = useState("intro");
   const [iqAnswers, setIqAnswers] = useState({});
