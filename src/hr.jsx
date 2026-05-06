@@ -2,10 +2,29 @@ import { useState, useMemo } from "react";
 
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwxZKU5KNXZDWpESG1NinBrWhInlAQ1Cqp0g71WZbuRF3XcPhmb_JEtf6cXykVb5d-m/exec";
 const HR_PASSWORD = "hr2024";
-const BRAND = { blue: "#003D7C", green: "#C8D400", gray: "#F4F4F4", border: "#E0E0E0", dark: "#333333" };
 
-const RANK_COLOR = { "A — Высокий потенциал": "#27ae60", "B — Выше среднего": "#2980b9", "C — Средний уровень": "#e67e22", "D — Ниже ожиданий": "#c0392b" };
-const DISC_COLOR = { "Доминирование (D)": "#c0392b", "Влияние (I)": "#e67e22", "Стабильность (S)": "#27ae60", "Соответствие (C)": "#2980b9" };
+const BRAND = {
+  blue: "#003D7C",
+  green: "#C8D400",
+  lightBlue: "#0069B4",
+  gray: "#F4F4F4",
+  darkGray: "#333333",
+  border: "#E0E0E0",
+};
+
+const RANK_COLOR = {
+  "A — Высокий потенциал": "#27ae60",
+  "B — Выше среднего": "#2980b9",
+  "C — Средний уровень": "#e67e22",
+  "D — Ниже ожиданий": "#c0392b",
+};
+
+const DISC_COLOR = {
+  "Доминирование (D)": "#c0392b",
+  "Влияние (I)": "#e67e22",
+  "Стабильность (S)": "#27ae60",
+  "Соответствие (C)": "#2980b9",
+};
 
 const DISC_DATA = {
   "Доминирование (D)": {
@@ -80,13 +99,19 @@ const SECTIONS = [
   { key: "Вербальное мышление (макс 8)", label: "Вербальное", max: 8 },
   { key: "Ситуативные задачи (макс 12)", label: "Ситуативные", max: 12 },
   { key: "Нестандартное мышление (макс 8)", label: "Нестандартное", max: 8 },
-  { key: "Скорость решений (макс 7)", label: "Скорость", max: 7 },
+  { key: "Скорость решений (макс 7)", label: "Скорость суждения", max: 7 },
 ];
+
+// ─── Переиспользуемые компоненты ─────────────────────────────────────────────
 
 const Bar = ({ val, max, color, height = 6 }) => {
   const p = Math.min(100, Math.round((val / max) * 100));
   const c = color || (p >= 80 ? "#27ae60" : p >= 50 ? "#e67e22" : "#c0392b");
-  return <div style={{ height, background: "#eee", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: p + "%", background: c, borderRadius: 3, transition: "width 0.4s" }} /></div>;
+  return (
+    <div style={{ height, background: BRAND.border, borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ height: "100%", width: p + "%", background: c, borderRadius: 3, transition: "width 0.4s" }} />
+    </div>
+  );
 };
 
 const Tag = ({ label, color }) => (
@@ -95,12 +120,16 @@ const Tag = ({ label, color }) => (
 
 const RiskBlock = ({ title, items, color, icon }) => (
   <div style={{ marginBottom: 12 }}>
-    <div style={{ fontSize: 12, fontWeight: 600, color, marginBottom: 6 }}>{icon} {title}</div>
+    <div style={{ fontSize: 12, fontWeight: 700, color, marginBottom: 6 }}>{icon} {title}</div>
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-      {items.map((item, i) => <div key={i} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, background: color + "11", color: "#333", border: "1px solid " + color + "33" }}>{item}</div>)}
+      {items.map((item, i) => (
+        <div key={i} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, background: color + "11", color: BRAND.darkGray, border: "1px solid " + color + "33" }}>{item}</div>
+      ))}
     </div>
   </div>
 );
+
+const getDISCKey = (disc) => disc?.includes("D") ? "D" : disc?.includes("I") ? "I" : disc?.includes("S") ? "S" : "C";
 
 const AIInsight = ({ candidate }) => {
   const [insight, setInsight] = useState("");
@@ -112,18 +141,20 @@ const AIInsight = ({ candidate }) => {
     try {
       const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ candidate }) });
       const data = await res.json();
-      setInsight(data.result || "Не удалось получить анализ.");
+      setInsight(data.result || data.analysis || "Не удалось получить анализ.");
       setDone(true);
-    } catch (e) { setInsight("Ошибка при генерации анализа."); setDone(true); }
+    } catch { setInsight("Ошибка при генерации анализа."); setDone(true); }
     setLoading(false);
   };
 
-  if (!done && !loading) return <button onClick={generate} style={{ padding: "10px 20px", background: BRAND.blue, color: "#fff", border: "none", borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Сгенерировать AI-анализ</button>;
+  if (!done && !loading) return (
+    <button onClick={generate} style={{ padding: "10px 24px", background: BRAND.blue, color: "#fff", border: "none", borderRadius: 4, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+      Сгенерировать AI-анализ
+    </button>
+  );
   if (loading) return <div style={{ fontSize: 13, color: "#888" }}>Анализирую профиль кандидата...</div>;
-  return <div style={{ fontSize: 13, color: "#333", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{insight}</div>;
+  return <div style={{ fontSize: 13, color: BRAND.darkGray, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{insight}</div>;
 };
-
-const getDISCKey = (disc) => disc?.includes("D") ? "D" : disc?.includes("I") ? "I" : disc?.includes("S") ? "S" : "C";
 
 const ComboBlock = ({ candidate }) => {
   const pk = getDISCKey(candidate["DISC осн."]);
@@ -134,33 +165,32 @@ const ComboBlock = ({ candidate }) => {
   const riskLabel = combo?.risk === "high" ? "Высокий риск" : combo?.risk === "medium" ? "Умеренный риск" : "Хорошая комбинация";
 
   return (
-    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-      <div style={{ flex: 1, minWidth: 280, background: "#fff", border: "1px solid " + BRAND.border, borderRadius: 4, padding: "1rem 1.25rem", marginBottom: 12 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: BRAND.blue, marginBottom: 12, paddingBottom: 6, borderBottom: "2px solid " + BRAND.green }}>Совместимость DISC + Белбин</div>
+    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+      <div style={{ flex: 1, minWidth: 280, background: "#fff", border: "1px solid " + BRAND.border, borderRadius: 4, padding: "1rem 1.25rem" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: BRAND.blue, marginBottom: 12, paddingBottom: 6, borderBottom: "2px solid " + BRAND.green }}>Совместимость DISC + Белбин</div>
         {combo && (
-          <div style={{ marginBottom: 16 }}>
+          <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: riskColor }}>{riskLabel}</span>
               <span style={{ fontSize: 12, color: "#888" }}>{combo.label}</span>
             </div>
-            <div style={{ fontSize: 13, color: "#333", lineHeight: 1.7, background: riskColor + "11", padding: "10px 14px", borderLeft: "3px solid " + riskColor, borderRadius: 2 }}>{combo.text}</div>
+            <div style={{ fontSize: 13, color: BRAND.darkGray, lineHeight: 1.7, background: riskColor + "11", padding: "10px 14px", borderLeft: "3px solid " + riskColor, borderRadius: 2 }}>{combo.text}</div>
           </div>
         )}
       </div>
-
-      <div style={{ flex: 1, minWidth: 280, background: "#fff", border: "1px solid " + BRAND.border, borderRadius: 4, padding: "1rem 1.25rem", marginBottom: 12 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: BRAND.blue, marginBottom: 12, paddingBottom: 6, borderBottom: "2px solid " + BRAND.green }}>Стиль коммуникации</div>
+      <div style={{ flex: 1, minWidth: 280, background: "#fff", border: "1px solid " + BRAND.border, borderRadius: 4, padding: "1rem 1.25rem" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: BRAND.blue, marginBottom: 12, paddingBottom: 6, borderBottom: "2px solid " + BRAND.green }}>Стиль коммуникации</div>
         {comm && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[
-              { label: "Как ставить задачи", icon: "📋", text: comm.how_to_brief, color: BRAND.blue },
-              { label: "Как давать обратную связь", icon: "💬", text: comm.feedback, color: "#2980b9" },
-              { label: "Что мотивирует", icon: "⚡", text: comm.motivates, color: "#27ae60" },
-              { label: "Чего избегать", icon: "✕", text: comm.avoid, color: "#c0392b" },
+              { label: "Как ставить задачи", text: comm.how_to_brief, color: BRAND.blue },
+              { label: "Как давать обратную связь", text: comm.feedback, color: "#2980b9" },
+              { label: "Что мотивирует", text: comm.motivates, color: "#27ae60" },
+              { label: "Чего избегать", text: comm.avoid, color: "#c0392b" },
             ].map((item, i) => (
               <div key={i} style={{ borderLeft: "3px solid " + item.color, paddingLeft: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: item.color, marginBottom: 4 }}>{item.icon} {item.label}</div>
-                <div style={{ fontSize: 13, color: "#333", lineHeight: 1.6 }}>{item.text}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: item.color, marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>{item.label}</div>
+                <div style={{ fontSize: 13, color: BRAND.darkGray, lineHeight: 1.6 }}>{item.text}</div>
               </div>
             ))}
           </div>
@@ -170,7 +200,9 @@ const ComboBlock = ({ candidate }) => {
   );
 };
 
-export default function App() {
+// ─── Главный компонент ────────────────────────────────────────────────────────
+
+export default function HR() {
   const [auth, setAuth] = useState(false);
   const [pass, setPass] = useState("");
   const [passErr, setPassErr] = useState(false);
@@ -185,12 +217,44 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState("list");
 
-  const btn = (active) => ({ padding: "6px 14px", borderRadius: 4, border: "1px solid " + BRAND.border, background: active ? BRAND.blue : "#fff", color: active ? "#fff" : BRAND.dark, cursor: "pointer", fontSize: 13, fontWeight: active ? 600 : 400 });
-  const card = { background: "#fff", border: "1px solid " + BRAND.border, borderRadius: 4, padding: "1rem 1.25rem", marginBottom: 12 };
-  const h2 = { fontSize: 15, fontWeight: 600, color: BRAND.blue, margin: "0 0 12px", paddingBottom: 6, borderBottom: "2px solid " + BRAND.green };
-  const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
+  // Стили — точное соответствие App.jsx
+  const wrap = { fontFamily: "Arial, sans-serif", background: "#fff", minHeight: "100vh" };
+  const pageContent = { padding: "1.5rem", maxWidth: 980, margin: "0 auto" };
 
-  const login = () => { if (pass === HR_PASSWORD) { setAuth(true); loadData(); } else setPassErr(true); };
+  const btnStyle = (active, danger) => ({
+    padding: "6px 14px",
+    borderRadius: 4,
+    border: danger ? "1px solid #c0392b" : "1px solid " + BRAND.border,
+    background: active ? BRAND.blue : "#fff",
+    color: active ? "#fff" : danger ? "#c0392b" : BRAND.darkGray,
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: active ? 700 : 400,
+  });
+
+  const card = {
+    background: "#fff",
+    border: "1px solid " + BRAND.border,
+    borderRadius: 4,
+    padding: "1rem 1.25rem",
+    marginBottom: 12,
+  };
+
+  const sectionTitle = {
+    fontSize: 15,
+    fontWeight: 700,
+    color: BRAND.blue,
+    margin: "0 0 12px",
+    paddingBottom: 6,
+    borderBottom: "2px solid " + BRAND.green,
+  };
+
+  const rowStyle = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
+
+  const login = () => {
+    if (pass === HR_PASSWORD) { setAuth(true); loadData(); }
+    else setPassErr(true);
+  };
 
   const loadData = async () => {
     setLoading(true); setError("");
@@ -199,7 +263,7 @@ export default function App() {
       const json = await res.json();
       if (json.result === "success") setCandidates(json.data.reverse());
       else setError("Ошибка загрузки данных");
-    } catch (e) { setError("Не удалось подключиться к таблице"); }
+    } catch { setError("Не удалось подключиться к таблице"); }
     setLoading(false);
   };
 
@@ -209,7 +273,7 @@ export default function App() {
       await fetch(SHEETS_URL + "?action=delete&name=" + encodeURIComponent(candidate["Имя"]) + "&date=" + String(candidate["Дата"]).slice(0, 10));
       setCandidates(prev => prev.filter(c => !(c["Имя"] === candidate["Имя"] && c["Дата"] === candidate["Дата"])));
       if (selected) setSelected(null);
-    } catch (e) { alert("Ошибка удаления"); }
+    } catch { alert("Ошибка удаления"); }
   };
 
   const filtered = useMemo(() => candidates.filter(c => {
@@ -225,69 +289,79 @@ export default function App() {
   const belbins = [...new Set(candidates.map(c => c["Белбин осн."]).filter(Boolean))];
   const avgScore = candidates.length ? Math.round(candidates.reduce((s, c) => s + (Number(c["Балл % (макс 100)"]) || 0), 0) / candidates.length) : 0;
 
-  const Header = () => (
-    <div style={{ background: BRAND.blue, padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-      <img src="/stadler-logo.png" alt="Stadler" style={{ height: 22, filter: "brightness(0) invert(1)" }} />
-      <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}>HR-панель · Отдел закупок и снабжения</span>
+  // Header — идентичен App.jsx
+  const Header = ({ subtitle }) => (
+    <div style={{ background: BRAND.blue, padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <img src="/stadler-logo.png" alt="Stadler" style={{ height: 22, filter: "brightness(0) invert(1)", display: "block" }} />
+      {subtitle && <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, letterSpacing: "0.3px" }}>{subtitle}</span>}
     </div>
   );
 
+  // ─── Экран авторизации ────────────────────────────────────────────────────
+
   if (!auth) return (
-    <div style={{ fontFamily: "Arial, sans-serif", minHeight: "100vh", background: BRAND.gray }}>
-      <div style={{ background: BRAND.blue, padding: "14px 24px" }}>
-        <img src="/stadler-logo.png" alt="Stadler" style={{ height: 22, filter: "brightness(0) invert(1)" }} />
-      </div>
-      <div style={{ maxWidth: 360, margin: "4rem auto", padding: "0 1rem" }}>
+    <div style={wrap}>
+      <Header subtitle="HR-панель · Отдел закупок и снабжения" />
+      <div style={{ maxWidth: 360, margin: "4rem auto", padding: "0 1.5rem" }}>
         <div style={card}>
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: BRAND.blue }}>HR-панель</div>
-            <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>Введите пароль для доступа</div>
-          </div>
-          <input type="password" value={pass} onChange={e => { setPass(e.target.value); setPassErr(false); }} onKeyDown={e => e.key === "Enter" && login()} placeholder="Пароль..."
-            style={{ width: "100%", boxSizing: "border-box", marginBottom: 8, padding: "10px 14px", fontSize: 15, borderRadius: 4, border: passErr ? "1.5px solid #c0392b" : "1px solid " + BRAND.border, background: "#fff" }} />
+          <h2 style={{ ...sectionTitle, textAlign: "center", borderBottom: "none", marginBottom: 4 }}>HR-панель</h2>
+          <p style={{ fontSize: 13, color: "#888", textAlign: "center", marginBottom: 20 }}>Введите пароль для доступа</p>
+          <input
+            type="password"
+            value={pass}
+            onChange={e => { setPass(e.target.value); setPassErr(false); }}
+            onKeyDown={e => e.key === "Enter" && login()}
+            placeholder="Пароль..."
+            style={{ width: "100%", boxSizing: "border-box", marginBottom: 8, padding: "10px 14px", fontSize: 15, borderRadius: 4, border: passErr ? "1.5px solid #c0392b" : "1px solid " + BRAND.border, background: BRAND.gray, color: BRAND.darkGray }}
+          />
           {passErr && <div style={{ color: "#c0392b", fontSize: 12, marginBottom: 8 }}>Неверный пароль</div>}
-          <button style={{ ...btn(true), width: "100%", padding: "10px", fontSize: 15 }} onClick={login}>Войти</button>
+          <button style={{ ...btnStyle(true), width: "100%", padding: "10px", fontSize: 15 }} onClick={login}>Войти</button>
         </div>
       </div>
     </div>
   );
 
-  return (
-    <div style={{ fontFamily: "Arial, sans-serif", minHeight: "100vh", background: "#f9f9f9" }}>
-      <Header />
-      <div style={{ padding: "0 1.25rem 1.25rem", maxWidth: 980, margin: "0 auto" }}>
+  // ─── Основной интерфейс ───────────────────────────────────────────────────
 
-        <div style={{ ...row, justifyContent: "space-between", marginBottom: 16 }}>
+  return (
+    <div style={wrap}>
+      <Header subtitle="HR-панель · Отдел закупок и снабжения" />
+      <div style={pageContent}>
+
+        {/* Шапка панели */}
+        <div style={{ ...rowStyle, justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: BRAND.blue }}>Кандидаты</div>
             <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{candidates.length} записей загружено</div>
           </div>
-          <div style={row}>
-            {["list", "card", "stats"].map(v => (
-              <button key={v} style={btn(view === v && !selected)} onClick={() => { setView(v); setSelected(null); }}>
-                {v === "list" ? "Список" : v === "card" ? "Карточки" : "Статистика"}
-              </button>
+          <div style={rowStyle}>
+            {[["list", "Список"], ["card", "Карточки"], ["stats", "Статистика"]].map(([v, label]) => (
+              <button key={v} style={btnStyle(view === v && !selected)} onClick={() => { setView(v); setSelected(null); }}>{label}</button>
             ))}
-            <button style={{ ...btn(false), background: BRAND.gray }} onClick={loadData}>↻ Обновить</button>
+            <button style={{ ...btnStyle(false), background: BRAND.gray }} onClick={loadData}>↻ Обновить</button>
           </div>
         </div>
 
+        {/* Фильтры */}
         <div style={{ ...card, padding: "0.75rem 1.25rem" }}>
-          <div style={{ ...row, gap: 12 }}>
-            <input placeholder="Поиск по имени..." value={search} onChange={e => setSearch(e.target.value)}
-              style={{ padding: "6px 12px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13, width: 180 }} />
-            <select value={filterRank} onChange={e => setFilterRank(e.target.value)} style={{ padding: "6px 10px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13 }}>
+          <div style={{ ...rowStyle, gap: 10 }}>
+            <input
+              placeholder="Поиск по имени..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ padding: "6px 12px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13, background: BRAND.gray, color: BRAND.darkGray, width: 180 }}
+            />
+            <select value={filterRank} onChange={e => setFilterRank(e.target.value)} style={{ padding: "6px 10px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13, background: BRAND.gray }}>
               <option value="all">Все ранги</option>{ranks.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
-            <select value={filterDisc} onChange={e => setFilterDisc(e.target.value)} style={{ padding: "6px 10px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13 }}>
+            <select value={filterDisc} onChange={e => setFilterDisc(e.target.value)} style={{ padding: "6px 10px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13, background: BRAND.gray }}>
               <option value="all">Все DISC</option>{discs.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={filterBelbin} onChange={e => setFilterBelbin(e.target.value)} style={{ padding: "6px 10px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13 }}>
+            <select value={filterBelbin} onChange={e => setFilterBelbin(e.target.value)} style={{ padding: "6px 10px", borderRadius: 4, border: "1px solid " + BRAND.border, fontSize: 13, background: BRAND.gray }}>
               <option value="all">Все роли Белбин</option>{belbins.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
             {(filterRank !== "all" || filterDisc !== "all" || filterBelbin !== "all" || search) && (
-              <button style={btn(false)} onClick={() => { setFilterRank("all"); setFilterDisc("all"); setFilterBelbin("all"); setSearch(""); }}>Сбросить</button>
+              <button style={btnStyle(false)} onClick={() => { setFilterRank("all"); setFilterDisc("all"); setFilterBelbin("all"); setSearch(""); }}>Сбросить</button>
             )}
           </div>
         </div>
@@ -295,9 +369,10 @@ export default function App() {
         {loading && <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Загрузка...</div>}
         {error && <div style={{ color: "#c0392b", padding: "1rem", textAlign: "center" }}>{error}</div>}
 
+        {/* ─── СТАТИСТИКА ─── */}
         {view === "stats" && !loading && !selected && (
           <div>
-            <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
               {[
                 { val: candidates.length, label: "Всего", color: BRAND.blue },
                 { val: avgScore + "%", label: "Средний балл", color: "#2980b9" },
@@ -306,7 +381,7 @@ export default function App() {
                 { val: candidates.filter(c => c["Ранг"] === "C — Средний уровень").length, label: "Ранг C", color: "#e67e22" },
                 { val: candidates.filter(c => c["Ранг"] === "D — Ниже ожиданий").length, label: "Ранг D", color: "#c0392b" },
               ].map((item, i) => (
-                <div key={i} style={{ textAlign: "center", padding: "12px 20px", background: BRAND.gray, borderRadius: 4, flex: 1, minWidth: 100 }}>
+                <div key={i} style={{ textAlign: "center", padding: "12px 20px", background: BRAND.gray, borderRadius: 4, flex: 1, minWidth: 100, border: "1px solid " + BRAND.border }}>
                   <div style={{ fontSize: 28, fontWeight: 700, color: item.color }}>{item.val}</div>
                   <div style={{ fontSize: 12, color: "#888" }}>{item.label}</div>
                 </div>
@@ -314,32 +389,45 @@ export default function App() {
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <div style={{ ...card, flex: 1, minWidth: 280 }}>
-                <div style={h2}>Средний балл по секциям</div>
+                <div style={sectionTitle}>Средний балл по секциям</div>
                 {SECTIONS.map(sec => {
                   const vals = candidates.map(c => Number(c[sec.key]) || 0).filter(v => v > 0);
                   const avg = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
-                  return <div key={sec.key} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 13 }}>{sec.label}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{avg}/{sec.max}</span></div>
-                    <Bar val={avg} max={sec.max} />
-                  </div>;
+                  return (
+                    <div key={sec.key} style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 13 }}>{sec.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{avg}/{sec.max}</span>
+                      </div>
+                      <Bar val={Number(avg)} max={sec.max} />
+                    </div>
+                  );
                 })}
               </div>
               <div style={{ ...card, flex: 1, minWidth: 280 }}>
-                <div style={h2}>DISC — распределение</div>
+                <div style={sectionTitle}>DISC — распределение</div>
                 {Object.keys(DISC_DATA).map(d => {
                   const cnt = candidates.filter(c => c["DISC осн."] === d).length;
-                  return <div key={d} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 13 }}>{d}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{cnt}</span></div>
-                    <Bar val={cnt} max={Math.max(1, candidates.length)} color={DISC_COLOR[d]} />
-                  </div>;
+                  return (
+                    <div key={d} style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 13 }}>{d}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{cnt}</span>
+                      </div>
+                      <Bar val={cnt} max={Math.max(1, candidates.length)} color={DISC_COLOR[d]} />
+                    </div>
+                  );
                 })}
               </div>
               <div style={{ ...card, flex: 1, minWidth: 280 }}>
-                <div style={h2}>Белбин — топ ролей</div>
+                <div style={sectionTitle}>Белбин — топ ролей</div>
                 {Object.entries(candidates.reduce((acc, c) => { const r = c["Белбин осн."]; if (r) acc[r] = (acc[r] || 0) + 1; return acc; }, {}))
                   .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([role, cnt]) => (
                     <div key={role} style={{ marginBottom: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 13 }}>{role}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{cnt}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 13 }}>{role}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{cnt}</span>
+                      </div>
                       <Bar val={cnt} max={Math.max(1, candidates.length)} color={BRAND.blue} />
                     </div>
                   ))}
@@ -348,69 +436,73 @@ export default function App() {
           </div>
         )}
 
+        {/* ─── СПИСОК ─── */}
         {view === "list" && !loading && !selected && (
           <div>
             {compare.length > 0 && (
               <div style={{ ...card, background: "#f0f7ff", border: "1px solid #2980b9" }}>
-                <div style={{ ...row, justifyContent: "space-between" }}>
+                <div style={{ ...rowStyle, justifyContent: "space-between" }}>
                   <div style={{ fontSize: 13, color: "#2980b9", fontWeight: 600 }}>Выбрано: {compare.map(c => c["Имя"]).join(" vs ")}</div>
-                  <div style={row}>
-                    {compare.length === 2 && <button style={btn(true)} onClick={() => setView("compare")}>Сравнить</button>}
-                    <button style={btn(false)} onClick={() => setCompare([])}>Сбросить</button>
+                  <div style={rowStyle}>
+                    {compare.length === 2 && <button style={btnStyle(true)} onClick={() => setView("compare")}>Сравнить</button>}
+                    <button style={btnStyle(false)} onClick={() => setCompare([])}>Сбросить</button>
                   </div>
                 </div>
               </div>
             )}
             <div style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>Найдено: {filtered.length}</div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: BRAND.gray, borderBottom: "2px solid " + BRAND.green }}>
-                  {["", "Имя", "Дата", "Балл", "Ранг", "DISC", "Белбин", ""].map((h, i) => (
-                    <th key={i} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, color: BRAND.blue, fontWeight: 700 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c, i) => {
-                  const score = Number(c["Балл % (макс 100)"]) || 0;
-                  const rankColor = RANK_COLOR[c["Ранг"]] || "#888";
-                  const inCompare = compare.some(x => x["Имя"] === c["Имя"] && x["Дата"] === c["Дата"]);
-                  return (
-                    <tr key={i} style={{ borderBottom: "1px solid " + BRAND.border, background: inCompare ? "#f0f7ff" : "white" }}>
-                      <td style={{ padding: "8px 12px" }}>
-                        <input type="checkbox" checked={inCompare} onChange={() => {
-                          if (inCompare) setCompare(prev => prev.filter(x => !(x["Имя"] === c["Имя"] && x["Дата"] === c["Дата"])));
-                          else if (compare.length < 2) setCompare(prev => [...prev, c]);
-                        }} />
-                      </td>
-                      <td style={{ padding: "8px 12px", fontWeight: 600, color: BRAND.blue }}>{c["Имя"]}</td>
-                      <td style={{ padding: "8px 12px", color: "#888", fontSize: 12 }}>{String(c["Дата"]).slice(0, 10)}</td>
-                      <td style={{ padding: "8px 12px" }}><span style={{ fontWeight: 700, color: rankColor }}>{score}%</span></td>
-                      <td style={{ padding: "8px 12px" }}><Tag label={(c["Ранг"] || "-").split(" — ")[0]} color={rankColor} /></td>
-                      <td style={{ padding: "8px 12px", fontSize: 12, color: "#555" }}>{c["DISC осн."] || "-"}</td>
-                      <td style={{ padding: "8px 12px", fontSize: 12, color: "#555" }}>{c["Белбин осн."] || "-"}</td>
-                      <td style={{ padding: "8px 12px" }}>
-                        <div style={row}>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setSelected(c)}>Открыть</button>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12, color: "#c0392b", borderColor: "#c0392b" }} onClick={() => deleteCandidate(c)}>✕</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filtered.length === 0 && <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Нет кандидатов</div>}
+            <div style={{ background: "#fff", border: "1px solid " + BRAND.border, borderRadius: 4, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: BRAND.gray, borderBottom: "2px solid " + BRAND.green }}>
+                    {["", "Имя", "Дата", "Балл", "Ранг", "DISC", "Белбин", ""].map((h, i) => (
+                      <th key={i} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, color: BRAND.blue, fontWeight: 700 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((c, i) => {
+                    const score = Number(c["Балл % (макс 100)"]) || 0;
+                    const rankColor = RANK_COLOR[c["Ранг"]] || "#888";
+                    const inCompare = compare.some(x => x["Имя"] === c["Имя"] && x["Дата"] === c["Дата"]);
+                    return (
+                      <tr key={i} style={{ borderBottom: "1px solid " + BRAND.border, background: inCompare ? "#f0f7ff" : i % 2 === 0 ? "#fff" : BRAND.gray }}>
+                        <td style={{ padding: "8px 12px" }}>
+                          <input type="checkbox" checked={inCompare} onChange={() => {
+                            if (inCompare) setCompare(prev => prev.filter(x => !(x["Имя"] === c["Имя"] && x["Дата"] === c["Дата"])));
+                            else if (compare.length < 2) setCompare(prev => [...prev, c]);
+                          }} />
+                        </td>
+                        <td style={{ padding: "8px 12px", fontWeight: 600, color: BRAND.blue }}>{c["Имя"]}</td>
+                        <td style={{ padding: "8px 12px", color: "#888", fontSize: 12 }}>{String(c["Дата"]).slice(0, 10)}</td>
+                        <td style={{ padding: "8px 12px" }}><span style={{ fontWeight: 700, color: rankColor }}>{score}%</span></td>
+                        <td style={{ padding: "8px 12px" }}><Tag label={(c["Ранг"] || "-").split(" — ")[0]} color={rankColor} /></td>
+                        <td style={{ padding: "8px 12px", fontSize: 12, color: "#555" }}>{c["DISC осн."] || "-"}</td>
+                        <td style={{ padding: "8px 12px", fontSize: 12, color: "#555" }}>{c["Белбин осн."] || "-"}</td>
+                        <td style={{ padding: "8px 12px" }}>
+                          <div style={rowStyle}>
+                            <button style={{ ...btnStyle(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setSelected(c)}>Открыть</button>
+                            <button style={{ ...btnStyle(false, true), padding: "4px 10px", fontSize: 12 }} onClick={() => deleteCandidate(c)}>✕</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {filtered.length === 0 && <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Нет кандидатов</div>}
+            </div>
           </div>
         )}
 
+        {/* ─── КАРТОЧКИ ─── */}
         {view === "card" && !loading && !selected && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             {filtered.map((c, i) => {
               const score = Number(c["Балл % (макс 100)"]) || 0;
               const rankColor = RANK_COLOR[c["Ранг"]] || "#888";
               return (
-                <div key={i} style={{ ...card, width: 240, cursor: "pointer", borderTop: "3px solid " + BRAND.blue }} onClick={() => setSelected(c)}>
+                <div key={i} style={{ ...card, width: 240, cursor: "pointer", borderTop: "3px solid " + BRAND.blue, marginBottom: 0 }} onClick={() => setSelected(c)}>
                   <div style={{ fontWeight: 700, color: BRAND.blue, marginBottom: 4 }}>{c["Имя"]}</div>
                   <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>{String(c["Дата"]).slice(0, 10)}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
@@ -428,14 +520,17 @@ export default function App() {
           </div>
         )}
 
+        {/* ─── КАРТОЧКА КАНДИДАТА ─── */}
         {selected && (
           <div>
-            <div style={{ ...row, justifyContent: "space-between", marginBottom: 16 }}>
-              <button style={btn(false)} onClick={() => setSelected(null)}>← Назад</button>
-              <button style={{ ...btn(false), color: "#c0392b", borderColor: "#c0392b" }} onClick={() => deleteCandidate(selected)}>🗑 Удалить запись</button>
+            <div style={{ ...rowStyle, justifyContent: "space-between", marginBottom: 16 }}>
+              <button style={btnStyle(false)} onClick={() => setSelected(null)}>← Назад</button>
+              <button style={btnStyle(false, true)} onClick={() => deleteCandidate(selected)}>🗑 Удалить запись</button>
             </div>
+
+            {/* Шапка кандидата */}
             <div style={card}>
-              <div style={{ ...row, justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ ...rowStyle, justifyContent: "space-between", marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: BRAND.blue }}>{selected["Имя"]}</div>
                   <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{String(selected["Дата"]).slice(0, 16)}</div>
@@ -450,53 +545,67 @@ export default function App() {
               </div>
             </div>
 
+            {/* Секции */}
             <div style={card}>
-              <div style={h2}>Результаты по секциям</div>
+              <div style={sectionTitle}>Результаты по секциям</div>
               {SECTIONS.map(sec => {
                 const val = Number(selected[sec.key]) || 0;
                 const p = Math.round((val / sec.max) * 100);
-                return <div key={sec.key} style={{ marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 13 }}>{sec.label}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{val}/{sec.max} ({p}%)</span></div>
-                  <Bar val={val} max={sec.max} />
-                </div>;
+                return (
+                  <div key={sec.key} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 13 }}>{sec.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{val}/{sec.max} ({p}%)</span>
+                    </div>
+                    <Bar val={val} max={sec.max} />
+                  </div>
+                );
               })}
             </div>
 
+            {/* DISC + Белбин */}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <div style={{ ...card, flex: 1, minWidth: 280 }}>
-                <div style={h2}>DISC-профиль</div>
+                <div style={sectionTitle}>DISC-профиль</div>
                 <div style={{ marginBottom: 6 }}><Tag label={selected["DISC осн."] || "-"} color={DISC_COLOR[selected["DISC осн."]] || "#888"} /><span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>основной</span></div>
                 <div style={{ marginBottom: 14 }}><Tag label={selected["DISC втор."] || "-"} color={DISC_COLOR[selected["DISC втор."]] || "#888"} /><span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>вторичный</span></div>
-                {DISC_DATA[selected["DISC осн."]] && <>
-                  <RiskBlock title="Сильные стороны" items={DISC_DATA[selected["DISC осн."]].strengths} color="#27ae60" icon="✓" />
-                  <RiskBlock title="Зоны риска" items={DISC_DATA[selected["DISC осн."]].risks} color="#e67e22" icon="⚠" />
-                  <RiskBlock title="Не подходит для" items={DISC_DATA[selected["DISC осн."]].not_for} color="#c0392b" icon="✕" />
-                </>}
+                {DISC_DATA[selected["DISC осн."]] && (
+                  <>
+                    <RiskBlock title="Сильные стороны" items={DISC_DATA[selected["DISC осн."]].strengths} color="#27ae60" icon="✓" />
+                    <RiskBlock title="Зоны риска" items={DISC_DATA[selected["DISC осн."]].risks} color="#e67e22" icon="⚠" />
+                    <RiskBlock title="Не подходит для" items={DISC_DATA[selected["DISC осн."]].not_for} color="#c0392b" icon="✕" />
+                  </>
+                )}
               </div>
               <div style={{ ...card, flex: 1, minWidth: 280 }}>
-                <div style={h2}>Командная роль (Белбин)</div>
+                <div style={sectionTitle}>Командная роль (Белбин)</div>
                 <div style={{ marginBottom: 6 }}><Tag label={selected["Белбин осн."] || "-"} color={BRAND.blue} /><span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>основная</span></div>
-                <div style={{ marginBottom: 14 }}><Tag label={selected["Белбин втор."] || "-"} color="#0069B4" /><span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>вторичная</span></div>
-                {BELBIN_DATA[selected["Белбин осн."]] && <>
-                  <RiskBlock title="Сильные стороны" items={BELBIN_DATA[selected["Белбин осн."]].strengths} color="#27ae60" icon="✓" />
-                  <RiskBlock title="Зоны риска" items={BELBIN_DATA[selected["Белбин осн."]].risks} color="#e67e22" icon="⚠" />
-                  <RiskBlock title="Не подходит для" items={BELBIN_DATA[selected["Белбин осн."]].not_for} color="#c0392b" icon="✕" />
-                </>}
+                <div style={{ marginBottom: 14 }}><Tag label={selected["Белбин втор."] || "-"} color={BRAND.lightBlue} /><span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>вторичная</span></div>
+                {BELBIN_DATA[selected["Белбин осн."]] && (
+                  <>
+                    <RiskBlock title="Сильные стороны" items={BELBIN_DATA[selected["Белбин осн."]].strengths} color="#27ae60" icon="✓" />
+                    <RiskBlock title="Зоны риска" items={BELBIN_DATA[selected["Белбин осн."]].risks} color="#e67e22" icon="⚠" />
+                    <RiskBlock title="Не подходит для" items={BELBIN_DATA[selected["Белбин осн."]].not_for} color="#c0392b" icon="✕" />
+                  </>
+                )}
               </div>
             </div>
 
+            {/* Совместимость + стиль коммуникации */}
             <ComboBlock candidate={selected} />
 
+            {/* AI-анализ */}
             <div style={{ ...card, background: BRAND.gray, borderLeft: "4px solid " + BRAND.blue }}>
-              <div style={h2}>AI-анализ кандидата</div>
+              <div style={sectionTitle}>AI-анализ кандидата</div>
               <AIInsight candidate={selected} />
             </div>
           </div>
         )}
 
+        {/* ─── СРАВНЕНИЕ ─── */}
         {view === "compare" && compare.length === 2 && !selected && (
           <div>
-            <button style={{ ...btn(false), marginBottom: 16 }} onClick={() => setView("list")}>← Назад</button>
+            <button style={{ ...btnStyle(false), marginBottom: 16 }} onClick={() => setView("list")}>← Назад</button>
             <div style={{ display: "flex", gap: 12 }}>
               {compare.map((c, ci) => {
                 const score = Number(c["Балл % (макс 100)"]) || 0;
@@ -510,10 +619,15 @@ export default function App() {
                     <div style={{ marginTop: 16 }}>
                       {SECTIONS.map(sec => {
                         const val = Number(c[sec.key]) || 0;
-                        return <div key={sec.key} style={{ marginBottom: 10 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 12 }}>{sec.label}</span><span style={{ fontSize: 12, fontWeight: 600 }}>{val}/{sec.max}</span></div>
-                          <Bar val={val} max={sec.max} />
-                        </div>;
+                        return (
+                          <div key={sec.key} style={{ marginBottom: 10 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                              <span style={{ fontSize: 12 }}>{sec.label}</span>
+                              <span style={{ fontSize: 12, fontWeight: 600 }}>{val}/{sec.max}</span>
+                            </div>
+                            <Bar val={val} max={sec.max} />
+                          </div>
+                        );
                       })}
                     </div>
                     <div style={{ marginTop: 12 }}>
@@ -528,6 +642,7 @@ export default function App() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
