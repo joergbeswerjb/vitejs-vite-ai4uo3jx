@@ -131,6 +131,37 @@ const RiskBlock = ({ title, items, color, icon }) => (
 
 const getDISCKey = (disc) => disc?.includes("D") ? "D" : disc?.includes("I") ? "I" : disc?.includes("S") ? "S" : "C";
 
+const ScoreWarning = ({ score }) => {
+  if (score >= 65) return null;
+  const isLow = score < 45;
+  const color = isLow ? "#c0392b" : "#e67e22";
+  const bg = isLow ? "#fdf2f2" : "#fef9f0";
+  const icon = isLow ? "⛔" : "⚠️";
+  const title = isLow ? "Кандидат не прошёл минимальный порог" : "Результат ниже ожиданий";
+  const text = isLow
+    ? "Балл за логику и мышление критически низкий. Психотип и командная роль ниже описаны для справки, однако когнитивный результат является главным фильтром. Рекомендуется отказ без дополнительных этапов."
+    : "Балл ниже ожидаемого уровня для самостоятельных ролей. DISC и Белбин профили могут быть полезны для понимания кандидата, однако уровень мышления требует учёта при принятии решения. Рекомендуется структурированное собеседование.";
+  return (
+    <div style={{ background: bg, border: "1px solid " + color, borderLeft: "4px solid " + color, borderRadius: 4, padding: "14px 18px", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <span style={{ fontSize: 18, lineHeight: 1 }}>{icon}</span>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color, marginBottom: 6 }}>{title}</div>
+          <div style={{ fontSize: 13, color: "#555", lineHeight: 1.6 }}>{text}</div>
+          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, background: color + "18", color, padding: "3px 10px", borderRadius: 20, fontWeight: 600 }}>
+              Балл: {score}% {isLow ? "— критически низкий" : "— ниже среднего"}
+            </span>
+            <span style={{ fontSize: 12, background: "#eee", color: "#555", padding: "3px 10px", borderRadius: 20 }}>
+              Норма для самостоятельных ролей: от 65%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AIInsight = ({ candidate }) => {
   const [insight, setInsight] = useState("");
   const [loading, setLoading] = useState(false);
@@ -163,18 +194,25 @@ const ComboBlock = ({ candidate }) => {
   const comm = COMM_STYLE[pk];
   const riskColor = combo?.risk === "high" ? "#c0392b" : combo?.risk === "medium" ? "#e67e22" : "#27ae60";
   const riskLabel = combo?.risk === "high" ? "Высокий риск" : combo?.risk === "medium" ? "Умеренный риск" : "Хорошая комбинация";
+  const score = Number(candidate["Балл % (макс 100)"]) || 0;
+  const lowScore = score < 45;
 
   return (
     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
       <div style={{ flex: 1, minWidth: 280, background: "#fff", border: "1px solid " + BRAND.border, borderRadius: 4, padding: "1rem 1.25rem" }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: BRAND.blue, marginBottom: 12, paddingBottom: 6, borderBottom: "2px solid " + BRAND.green }}>Совместимость DISC + Белбин</div>
+        {lowScore && (
+          <div style={{ fontSize: 12, color: "#c0392b", background: "#fdf2f2", border: "1px solid #f5c6c6", borderRadius: 4, padding: "8px 12px", marginBottom: 12 }}>
+            ⚠ Справочная информация. При балле ниже 45% психотип не компенсирует недостаточный уровень мышления.
+          </div>
+        )}
         {combo && (
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: riskColor }}>{riskLabel}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: lowScore ? "#aaa" : riskColor }}>{lowScore ? "Нерелевантно при данном балле" : riskLabel}</span>
               <span style={{ fontSize: 12, color: "#888" }}>{combo.label}</span>
             </div>
-            <div style={{ fontSize: 13, color: BRAND.darkGray, lineHeight: 1.7, background: riskColor + "11", padding: "10px 14px", borderLeft: "3px solid " + riskColor, borderRadius: 2 }}>{combo.text}</div>
+            <div style={{ fontSize: 13, color: lowScore ? "#999" : BRAND.darkGray, lineHeight: 1.7, background: lowScore ? "#f5f5f5" : riskColor + "11", padding: "10px 14px", borderLeft: "3px solid " + (lowScore ? "#ccc" : riskColor), borderRadius: 2 }}>{combo.text}</div>
           </div>
         )}
       </div>
@@ -527,6 +565,9 @@ export default function HR() {
               <button style={btnStyle(false)} onClick={() => setSelected(null)}>← Назад</button>
               <button style={btnStyle(false, true)} onClick={() => deleteCandidate(selected)}>🗑 Удалить запись</button>
             </div>
+
+            {/* Баннер предупреждения */}
+            <ScoreWarning score={Number(selected["Балл % (макс 100)"]) || 0} />
 
             {/* Шапка кандидата */}
             <div style={card}>
